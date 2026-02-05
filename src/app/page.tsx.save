@@ -1,3 +1,37 @@
+import Link from "next/link";
+
+export default function Home() {
+  return (
+    <main className="min-h-screen flex items-center justify-center px-6">
+      <div className="max-w-xl text-center">
+        <h1 className="text-5xl font-bold tracking-tight mb-6">
+          Train consistently. Improve faster.
+        </h1>
+
+        <p className="text-gray-400 text-lg mb-10">
+          AERIX helps Rocket League players track training,
+          build streaks, and find teammates — without noise.
+        </p>
+
+        <div className="flex justify-center gap-4">
+          <Link
+            href="/dashboard"
+            className="px-6 py-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 transition"
+          >
+            Enter App
+          </Link>
+
+          <Link
+            href="/pricing"
+            className="px-6 py-3 rounded-lg border border-gray-700 hover:border-gray-500 transition"
+          >
+            Pricing
+          </Link>
+        </div>
+      </div>
+    </main>
+  );
+}
 import Image from "next/image";
 
 export default function Home() {

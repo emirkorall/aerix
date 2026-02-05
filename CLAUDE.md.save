@@ -1,4 +1,4 @@
-≈≈
+
 # AERIX — Claude Code Instructions
 
 You are working on **AERIX**, a public, subscription-based web app for the Rocket League community.
@@ -46,6 +46,7 @@ Every feature should answer:
 “Why would a user pay for this?”
 
 If unsure, choose the option that ships faster.
+ CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
