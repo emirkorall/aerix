@@ -1,7 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
+
+type Plan = "free" | "starter" | "pro";
+
+const PLAN_LABELS: Record<Plan, string> = {
+  free: "Free",
+  starter: "Starter",
+  pro: "Pro",
+};
+
+const PLAN_INTROS: Record<Plan, string> = {
+  free: "Consistency matters more than intensity. A short, focused session beats a long, unfocused one. Show up, do the work, and move on.",
+  starter:
+    "Your Starter plan gives you a structured path. Each session builds on the last — follow the flow and trust the process.",
+  pro: "You\u2019re training with intent. Push your comfort zone each session, but stay controlled. Precision under pressure is the goal.",
+};
 
 const tasks = [
   {
@@ -34,6 +50,7 @@ const focusBlocks = [
       "Good car control is the foundation of everything in Rocket League. Before you can hit advanced shots, you need to feel comfortable moving your car in the air and on the ground. This drill builds that muscle memory.",
     videoId: "ed8owajA0Lc",
     credit: "Kevpert",
+    tier: "free" as Plan,
   },
   {
     id: "basic-aerials",
@@ -42,6 +59,7 @@ const focusBlocks = [
       "Aerials open up an entirely new dimension of play. Start with simple touches — getting off the ground with control matters more than hitting the ball hard. Accuracy first, power later.",
     videoId: "R3k9O-k_XC0",
     credit: "Wayton Pilkin",
+    tier: "free" as Plan,
   },
   {
     id: "positioning",
@@ -50,13 +68,62 @@ const focusBlocks = [
       "Mechanics win individual plays, but positioning wins games. Understanding when to challenge, when to rotate back, and where to be is what separates improving players from stuck ones.",
     videoId: "THcMLWOEc_o",
     credit: "SunlessKhan",
+    tier: "free" as Plan,
+  },
+  {
+    id: "power-shots",
+    skill: "Power Shots & Accuracy",
+    description:
+      "Clean, deliberate shots win more games than flashy ones. Focus on hitting the ball with the nose of your car and placing it where defenders aren\u2019t. Consistency here translates directly to wins.",
+    videoId: "lsSq0cFEAcE",
+    credit: "Thanovic",
+    tier: "starter" as Plan,
+  },
+  {
+    id: "fast-aerials",
+    skill: "Fast Aerials & Air Control",
+    description:
+      "Fast aerials let you contest the ball before your opponent can react. Combine jump timing with boost management and directional air roll for maximum efficiency in the air.",
+    videoId: "lkBZg0Ldhls",
+    credit: "Virge",
+    tier: "pro" as Plan,
   },
 ];
 
+const TIER_ORDER: Plan[] = ["free", "starter", "pro"];
+
+function getVisibleBlocks(plan: Plan) {
+  const tierIndex = TIER_ORDER.indexOf(plan);
+  return focusBlocks.filter(
+    (b) => TIER_ORDER.indexOf(b.tier) <= tierIndex
+  );
+}
+
 export default function Training() {
+  return (
+    <Suspense>
+      <TrainingContent />
+    </Suspense>
+  );
+}
+
+function TrainingContent() {
+  const searchParams = useSearchParams();
+  const rawPlan = searchParams.get("plan") ?? "free";
+  const plan: Plan = (["free", "starter", "pro"] as const).includes(
+    rawPlan as Plan
+  )
+    ? (rawPlan as Plan)
+    : "free";
+
+  const visibleBlocks = getVisibleBlocks(plan);
+
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [blocksDone, setBlocksDone] = useState<Record<string, boolean>>({});
   const [completed, setCompleted] = useState(false);
+  const [proTrack, setProTrack] = useState<"mechanics" | "game-sense">(
+    "mechanics"
+  );
 
   function toggle(id: string) {
     setChecked((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -88,16 +155,28 @@ export default function Training() {
         </nav>
 
         <section className="pt-20 pb-10">
-          <p className="mb-3 text-xs font-medium uppercase tracking-widest text-neutral-500">
-            Daily Training
-          </p>
+          <div className="mb-3 flex items-center gap-3">
+            <p className="text-xs font-medium uppercase tracking-widest text-neutral-500">
+              Daily Training
+            </p>
+            <span className="rounded-full border border-neutral-800 bg-neutral-900 px-2.5 py-0.5 text-[10px] font-medium text-neutral-400">
+              Plan: {PLAN_LABELS[plan]}
+            </span>
+          </div>
           <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
             Today&apos;s Training
           </h1>
           <p className="mt-4 max-w-md text-base leading-relaxed text-neutral-400">
-            Consistency matters more than intensity. A short, focused session
-            beats a long, unfocused one. Show up, do the work, and move on.
+            {PLAN_INTROS[plan]}
           </p>
+          {plan !== "free" && (
+            <Link
+              href="/training/plan"
+              className="mt-4 inline-block text-xs text-neutral-500 hover:text-neutral-300"
+            >
+              View Weekly Plan &rarr;
+            </Link>
+          )}
         </section>
 
         <div className="h-px w-full bg-neutral-800/60" />
@@ -174,7 +253,7 @@ export default function Training() {
               </div>
 
               <div className="flex flex-col gap-5">
-                {focusBlocks.map((block) => (
+                {visibleBlocks.map((block) => (
                   <div
                     key={block.id}
                     className={`rounded-xl border p-5 transition-colors ${
@@ -243,12 +322,102 @@ export default function Training() {
               </div>
 
               <p className="mt-4 text-center text-xs text-neutral-600">
-                {blocksDoneCount} of {focusBlocks.length} blocks completed
+                {blocksDoneCount} of {visibleBlocks.length} blocks completed
               </p>
               <p className="mt-2 text-center text-[11px] text-neutral-700">
                 Curated from the Rocket League community
               </p>
             </section>
+
+            {plan === "starter" && (
+              <>
+                <div className="h-px w-full bg-neutral-800/60" />
+                <section className="py-10">
+                  <h2 className="mb-4 text-sm font-medium text-neutral-500">
+                    Coach Note
+                  </h2>
+                  <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/[0.03] p-5">
+                    <p className="text-sm leading-relaxed text-neutral-300">
+                      Focus on one mechanic per session rather than switching
+                      between many. Depth beats breadth — 20 focused minutes
+                      will improve you more than an hour of scattered practice.
+                    </p>
+                    <p className="mt-3 text-xs text-neutral-600">
+                      Tip from the Aerix training philosophy
+                    </p>
+                  </div>
+                </section>
+              </>
+            )}
+
+            {plan === "pro" && (
+              <>
+                <div className="h-px w-full bg-neutral-800/60" />
+                <section className="py-10">
+                  <h2 className="mb-4 text-sm font-medium text-neutral-500">
+                    Pro Track
+                  </h2>
+                  <p className="mb-5 text-xs leading-relaxed text-neutral-600">
+                    Choose a focus for this session. Both paths build toward
+                    the same goal — becoming a more complete player.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setProTrack("mechanics")}
+                      className={`rounded-xl border p-4 text-left ${
+                        proTrack === "mechanics"
+                          ? "border-indigo-500/30 bg-indigo-500/[0.05]"
+                          : "border-neutral-800/60 bg-[#0c0c10] hover:border-neutral-700/60"
+                      }`}
+                    >
+                      <p
+                        className={`text-sm font-medium ${
+                          proTrack === "mechanics"
+                            ? "text-indigo-300"
+                            : "text-white"
+                        }`}
+                      >
+                        Mechanics
+                      </p>
+                      <p className="mt-1 text-xs text-neutral-500">
+                        Aerial control, flicks, and recoveries
+                      </p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setProTrack("game-sense")}
+                      className={`rounded-xl border p-4 text-left ${
+                        proTrack === "game-sense"
+                          ? "border-indigo-500/30 bg-indigo-500/[0.05]"
+                          : "border-neutral-800/60 bg-[#0c0c10] hover:border-neutral-700/60"
+                      }`}
+                    >
+                      <p
+                        className={`text-sm font-medium ${
+                          proTrack === "game-sense"
+                            ? "text-indigo-300"
+                            : "text-white"
+                        }`}
+                      >
+                        Game Sense
+                      </p>
+                      <p className="mt-1 text-xs text-neutral-500">
+                        Positioning, reads, and decision-making
+                      </p>
+                    </button>
+                  </div>
+                  <p className="mt-4 text-center text-xs text-neutral-600">
+                    Today&apos;s focus:{" "}
+                    <span className="text-neutral-400">
+                      {proTrack === "mechanics"
+                        ? "Mechanics"
+                        : "Game Sense"}
+                    </span>
+                  </p>
+                </section>
+              </>
+            )}
 
             <div className="h-px w-full bg-neutral-800/60" />
 

@@ -1,38 +1,32 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
-function getWeekDays(): { label: string; date: Date; status: "done" | "missed" | "today" | "upcoming" }[] {
-  const now = new Date();
-  const todayIndex = (now.getDay() + 6) % 7; // 0 = Mon
-
-  // Placeholder: trained Mon, Tue, Wed of this week (first 3 days)
-  const trained = new Set([0, 1, 2]);
-
-  return DAY_LABELS.map((label, i) => {
-    const date = new Date(now);
-    date.setDate(now.getDate() - todayIndex + i);
-
-    let status: "done" | "missed" | "today" | "upcoming";
-    if (i === todayIndex) {
-      status = "today";
-    } else if (i < todayIndex) {
-      status = trained.has(i) ? "done" : "missed";
-    } else {
-      status = "upcoming";
-    }
-
-    return { label, date, status };
-  });
-}
-
 export default function Dashboard() {
   const [streak] = useState(3);
-  const [trainedToday, setTrainedToday] = useState(false);
-  const weekDays = useMemo(() => getWeekDays(), []);
+  const todayIndex = useMemo(() => (new Date().getDay() + 6) % 7, []);
+
+  // Placeholder: Mon, Tue, Wed pre-completed
+  const [completedDays, setCompletedDays] = useState<Set<number>>(
+    () => new Set([0, 1, 2].filter((i) => i < todayIndex))
+  );
+
+  const trainedToday = completedDays.has(todayIndex);
+
+  const toggleDay = useCallback((index: number) => {
+    setCompletedDays((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  }, []);
 
   return (
     <main className="min-h-screen bg-[#060608] text-white">
@@ -149,31 +143,40 @@ export default function Dashboard() {
           </h2>
           <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6">
             <div className="grid grid-cols-7 gap-2">
-              {weekDays.map((day) => {
-                const isToday = day.status === "today";
-                const todayDone = isToday && trainedToday;
+              {DAY_LABELS.map((label, i) => {
+                const isToday = i === todayIndex;
+                const isDone = completedDays.has(i);
 
                 return (
-                  <div key={day.label} className="flex flex-col items-center gap-2.5">
+                  <button
+                    key={label}
+                    type="button"
+                    aria-pressed={isDone}
+                    aria-label={`${label}${isToday ? " (today)" : ""}: ${isDone ? "completed" : "not completed"}`}
+                    onClick={() => toggleDay(i)}
+                    className={`flex flex-col items-center gap-2.5 cursor-pointer rounded-lg py-2 outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 hover:bg-white/[0.03] ${
+                      isToday ? "ring-1 ring-neutral-700" : ""
+                    }`}
+                  >
                     <span
                       className={`text-[11px] font-medium ${
                         isToday ? "text-white" : "text-neutral-600"
                       }`}
                     >
-                      {day.label}
+                      {label}
                     </span>
                     <div
                       className={`flex h-8 w-8 items-center justify-center rounded-lg ${
-                        day.status === "done" || todayDone
+                        isDone
                           ? "bg-indigo-600/20"
-                          : day.status === "missed"
+                          : i < todayIndex
                             ? "bg-neutral-800/40"
                             : isToday
-                              ? "border border-neutral-700 bg-transparent"
+                              ? "bg-transparent"
                               : "bg-transparent"
                       }`}
                     >
-                      {day.status === "done" || todayDone ? (
+                      {isDone ? (
                         <svg
                           className="h-3.5 w-3.5 text-indigo-400"
                           fill="none"
@@ -187,36 +190,81 @@ export default function Dashboard() {
                             d="m4.5 12.75 6 6 9-13.5"
                           />
                         </svg>
-                      ) : day.status === "missed" ? (
-                        <svg
-                          className="h-3.5 w-3.5 text-neutral-700"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth={2.5}
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M6 18 18 6M6 6l12 12"
-                          />
-                        </svg>
+                      ) : i < todayIndex ? (
+                        <div className="h-1.5 w-1.5 rounded-full bg-neutral-700" />
                       ) : isToday ? (
                         <div className="h-1.5 w-1.5 rounded-full bg-neutral-500" />
                       ) : (
                         <div className="h-1.5 w-1.5 rounded-full bg-neutral-800" />
                       )}
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
             <p className="mt-5 text-center text-xs text-neutral-600">
-              Trained{" "}
-              {weekDays.filter((d) => d.status === "done").length +
-                (trainedToday ? 1 : 0)}{" "}
-              / 7 days
+              Trained {completedDays.size} / 7 days this week
             </p>
+          </div>
+          <div className="mt-4 flex items-center justify-between">
+            <p className="text-xs text-neutral-700">
+              Click any day to toggle your training.
+            </p>
+            <Link
+              href="/training/plan"
+              className="text-xs text-neutral-500 hover:text-neutral-300"
+            >
+              View Weekly Plan &rarr;
+            </Link>
+          </div>
+        </section>
+
+        <div className="h-px w-full bg-neutral-800/60" />
+
+        <section className="py-10">
+          <h2 className="mb-6 text-sm font-medium text-neutral-500">
+            Streak Protection
+          </h2>
+          <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-600/10">
+                <svg
+                  className="h-4 w-4 text-indigo-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white">
+                  1 Streak Save available this month
+                </p>
+                <p className="mt-0.5 text-xs text-neutral-500">
+                  If you miss a day, use a save to keep your streak going.
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex items-center gap-3">
+              <Link
+                href="/pricing"
+                className="flex h-9 items-center justify-center rounded-lg bg-indigo-600 px-4 text-xs font-semibold text-white hover:bg-indigo-500"
+              >
+                Unlock Streak Protection
+              </Link>
+              <Link
+                href="/plans/starter"
+                className="text-xs text-neutral-500 hover:text-neutral-300"
+              >
+                Learn more
+              </Link>
+            </div>
           </div>
         </section>
 
@@ -230,9 +278,15 @@ export default function Dashboard() {
             >
               {trainedToday ? "Review Training" : "Go to Training"}
             </Link>
+            <Link
+              href="/training/plan"
+              className="flex h-11 items-center justify-center rounded-lg border border-neutral-800/60 text-sm font-medium text-neutral-400 hover:border-neutral-700 hover:text-neutral-300"
+            >
+              Weekly Plan
+            </Link>
             {!trainedToday && (
               <button
-                onClick={() => setTrainedToday(true)}
+                onClick={() => toggleDay(todayIndex)}
                 className="flex h-11 items-center justify-center rounded-lg border border-neutral-800/60 text-sm font-medium text-neutral-400 hover:border-neutral-700 hover:text-neutral-300"
               >
                 Mark today as done
