@@ -70,3 +70,52 @@ This is a Next.js 16 project using the **App Router** (not Pages Router). All ro
 ## Styling
 
 Theme colors are defined as CSS custom properties in `app/globals.css` and registered via a `@theme` block for Tailwind. Use Tailwind utility classes with `dark:` prefix for dark mode variants.
+
+## External Libraries & Dependencies Policy
+
+**Purpose:** Protect stability, avoid premature complexity, and keep iteration fast.
+
+**Core principle:** No external library unless it directly improves user value or business safety.
+
+### Build Ourselves (Core IP)
+
+- Training flow
+- Streak logic
+- Progress philosophy
+- Dashboard UX
+- Free vs paid boundaries
+
+### Allowed Later
+
+- **Payments:** Stripe
+- **Auth:** Supabase or Clerk
+- **i18n:** Only after proven demand
+- **Analytics:** Retention-focused only
+
+### Disallowed in MVP
+
+- UI component libraries
+- State management libraries
+- Animation libraries
+- Charting libraries
+- AI SDKs
+- "All-in-one" frameworks
+
+### Evaluation Checklist
+
+Before adding any library, all four must be "yes":
+
+1. Does it improve user experience?
+2. Does it reduce security or legal risk?
+3. Is it removable later without breaking the product?
+4. Is it more reliable than a simple in-house solution?
+
+If any answer is "no" — don't add it.
+
+### Stability Rule
+
+If the library breaks, AERIX must still function.
+
+### Language Policy
+
+English-only for MVP. Add i18n only after proven demand.
