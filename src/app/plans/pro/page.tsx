@@ -32,10 +32,10 @@ export default function ProPlan() {
           <p className="mb-3 text-xs font-medium uppercase tracking-widest text-neutral-500">
             Pro Plan
           </p>
-          <h1 className="text-3xl font-bold tracking-tight text-white">
+          <h1 className="text-4xl font-bold tracking-tight text-white">
             Built for the grind.
           </h1>
-          <p className="mt-4 text-base leading-relaxed text-neutral-400">
+          <p className="mt-4 text-lg leading-relaxed text-neutral-400">
             Pro is for players who are serious about ranking up. You get
             everything in Starter, plus better matchmaking visibility, more
             streak flexibility, and training summaries that actually help you
@@ -112,18 +112,26 @@ export default function ProPlan() {
 
         <section className="py-10">
           <div className="flex items-baseline gap-2">
-            <p className="text-2xl font-bold text-white">€11.99</p>
+            <p className="text-3xl font-bold text-white">€11.99</p>
             <span className="text-sm text-neutral-500">/month</span>
           </div>
           <p className="mt-1 text-xs text-neutral-600">
             Regional pricing available. Cancel anytime.
           </p>
-          <Link
-            href="/dashboard"
-            className="mt-6 inline-flex h-11 items-center justify-center rounded-lg bg-indigo-600 px-6 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
-          >
-            Upgrade to Pro
-          </Link>
+          <div className="mt-6 flex items-center gap-4">
+            <Link
+              href="/upgrade?plan=pro"
+              className="inline-flex h-11 items-center justify-center rounded-lg bg-indigo-600 px-6 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+            >
+              Go Pro
+            </Link>
+            <Link
+              href="/pricing"
+              className="text-sm text-neutral-500 transition-colors hover:text-neutral-300"
+            >
+              Compare all plans
+            </Link>
+          </div>
         </section>
 
         <div className="h-px w-full bg-neutral-800/60" />

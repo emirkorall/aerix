@@ -110,10 +110,10 @@ export default function StarterPlan() {
             Regional pricing available. Cancel anytime.
           </p>
           <Link
-            href="/dashboard"
+            href="/upgrade?plan=starter"
             className="mt-6 inline-flex h-11 items-center justify-center rounded-lg bg-indigo-600 px-6 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
           >
-            Upgrade to Starter
+            Choose Starter
           </Link>
         </section>
 

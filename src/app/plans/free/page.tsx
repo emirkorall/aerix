@@ -118,6 +118,20 @@ export default function FreePlan() {
           <p className="text-xs text-neutral-600">
             No account needed to explore. Just jump in.
           </p>
+          <div className="mt-2 flex items-center gap-4">
+            <Link
+              href="/upgrade?plan=starter"
+              className="text-xs text-neutral-500 transition-colors hover:text-indigo-400"
+            >
+              Upgrade to Starter →
+            </Link>
+            <Link
+              href="/upgrade?plan=pro"
+              className="text-xs text-neutral-500 transition-colors hover:text-indigo-400"
+            >
+              Upgrade to Pro →
+            </Link>
+          </div>
         </section>
 
         <div className="h-px w-full bg-neutral-800/60" />
