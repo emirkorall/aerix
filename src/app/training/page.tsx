@@ -2,7 +2,17 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import {
+  isCompletedToday,
+  setCompletedToday,
+  onCompletionChange,
+  getCompletedDates,
+  getToday,
+  getSessionNotes,
+  saveSessionNote,
+} from "@/src/lib/training-completion";
+import type { SessionNote } from "@/src/lib/training-completion";
 
 type Plan = "free" | "starter" | "pro";
 
@@ -121,6 +131,45 @@ function TrainingContent() {
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [blocksDone, setBlocksDone] = useState<Record<string, boolean>>({});
   const [completed, setCompleted] = useState(false);
+
+  const [historyDates, setHistoryDates] = useState<Set<string>>(new Set());
+  const [notes, setNotes] = useState<SessionNote>({ better: "", tomorrow: "" });
+  const [allNotes, setAllNotes] = useState<Record<string, SessionNote>>({});
+  const [notesSaved, setNotesSaved] = useState(false);
+
+  useEffect(() => {
+    setCompleted(isCompletedToday());
+    setHistoryDates(getCompletedDates());
+    const all = getSessionNotes();
+    setAllNotes(all);
+    const today = getToday();
+    if (all[today]) {
+      setNotes(all[today]);
+      setNotesSaved(true);
+    }
+    return onCompletionChange(() => {
+      setCompleted(isCompletedToday());
+      setHistoryDates(getCompletedDates());
+    });
+  }, []);
+
+  const last7Days = useMemo(() => {
+    const days: { dateStr: string; label: string; dateLabel: string; isToday: boolean }[] = [];
+    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      days.push({
+        dateStr,
+        label: dayNames[d.getDay()],
+        dateLabel: `${d.getMonth() + 1}/${d.getDate()}`,
+        isToday: i === 0,
+      });
+    }
+    return days;
+  }, []);
+
   const [proTrack, setProTrack] = useState<"mechanics" | "game-sense">(
     "mechanics"
   );
@@ -423,7 +472,10 @@ function TrainingContent() {
 
             <section className="py-10">
               <button
-                onClick={() => setCompleted(true)}
+                onClick={() => {
+                  setCompleted(true);
+                  setCompletedToday(true);
+                }}
                 disabled={checkedCount === 0}
                 className={`flex h-11 w-full items-center justify-center rounded-lg text-sm font-semibold transition-colors ${
                   checkedCount > 0
@@ -439,41 +491,184 @@ function TrainingContent() {
             </section>
           </>
         ) : (
-          <section className="flex flex-col items-center py-20 text-center">
-            <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600/20">
-              <svg
-                className="h-7 w-7 text-indigo-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
+          <>
+            <section className="flex flex-col items-center py-20 text-center">
+              <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600/20">
+                <svg
+                  className="h-7 w-7 text-indigo-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="m4.5 12.75 6 6 9-13.5"
+                  />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight text-white">
+                You showed up today.
+              </h2>
+              <p className="mt-3 max-w-xs text-sm leading-relaxed text-neutral-400">
+                That&apos;s progress. It doesn&apos;t matter if the session was
+                short or messy — you did the work. Come back tomorrow.
+              </p>
+              <button
+                onClick={() => {
+                  setChecked({});
+                  setBlocksDone({});
+                  setCompleted(false);
+                  setCompletedToday(false);
+                }}
+                className="mt-8 text-xs text-neutral-600 transition-colors hover:text-neutral-400"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="m4.5 12.75 6 6 9-13.5"
-                />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold tracking-tight text-white">
-              You showed up today.
-            </h2>
-            <p className="mt-3 max-w-xs text-sm leading-relaxed text-neutral-400">
-              That&apos;s progress. It doesn&apos;t matter if the session was
-              short or messy — you did the work. Come back tomorrow.
-            </p>
-            <button
-              onClick={() => {
-                setChecked({});
-                setBlocksDone({});
-                setCompleted(false);
-              }}
-              className="mt-8 text-xs text-neutral-600 transition-colors hover:text-neutral-400"
-            >
-              Reset checklist
-            </button>
-          </section>
+                Reset checklist
+              </button>
+            </section>
+
+            <div className="h-px w-full bg-neutral-800/60" />
+
+            <section className="py-10">
+              <h2 className="mb-2 text-sm font-medium text-neutral-500">
+                Session Notes
+              </h2>
+              <p className="mb-6 text-xs text-neutral-600">
+                Quick reflection — no pressure, just a few words.
+              </p>
+              <div className="flex flex-col gap-4">
+                <div>
+                  <label
+                    htmlFor="note-better"
+                    className="mb-1.5 block text-xs font-medium text-neutral-400"
+                  >
+                    What felt better today?
+                  </label>
+                  <textarea
+                    id="note-better"
+                    rows={2}
+                    value={notes.better}
+                    onChange={(e) => {
+                      setNotes((prev) => ({ ...prev, better: e.target.value }));
+                      setNotesSaved(false);
+                    }}
+                    placeholder="e.g. Aerials felt more controlled"
+                    className="w-full resize-none rounded-lg border border-neutral-800/60 bg-[#0c0c10] px-3.5 py-2.5 text-sm text-white placeholder-neutral-700 outline-none transition-colors focus:border-neutral-700"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="note-tomorrow"
+                    className="mb-1.5 block text-xs font-medium text-neutral-400"
+                  >
+                    What will you focus on tomorrow?
+                  </label>
+                  <textarea
+                    id="note-tomorrow"
+                    rows={2}
+                    value={notes.tomorrow}
+                    onChange={(e) => {
+                      setNotes((prev) => ({
+                        ...prev,
+                        tomorrow: e.target.value,
+                      }));
+                      setNotesSaved(false);
+                    }}
+                    placeholder="e.g. Work on backboard reads"
+                    className="w-full resize-none rounded-lg border border-neutral-800/60 bg-[#0c0c10] px-3.5 py-2.5 text-sm text-white placeholder-neutral-700 outline-none transition-colors focus:border-neutral-700"
+                  />
+                </div>
+                <button
+                  onClick={() => {
+                    const today = getToday();
+                    saveSessionNote(today, notes);
+                    setAllNotes((prev) => ({ ...prev, [today]: notes }));
+                    setNotesSaved(true);
+                  }}
+                  disabled={!notes.better.trim() && !notes.tomorrow.trim()}
+                  className={`flex h-10 items-center justify-center rounded-lg text-sm font-medium transition-colors ${
+                    notes.better.trim() || notes.tomorrow.trim()
+                      ? notesSaved
+                        ? "bg-indigo-600/20 text-indigo-400"
+                        : "bg-indigo-600 text-white hover:bg-indigo-500"
+                      : "cursor-not-allowed bg-neutral-800/60 text-neutral-600"
+                  }`}
+                >
+                  {notesSaved ? "Notes saved" : "Save notes"}
+                </button>
+              </div>
+            </section>
+          </>
         )}
+
+        <div className="h-px w-full bg-neutral-800/60" />
+
+        <section className="py-10">
+          <h2 className="mb-6 text-sm font-medium text-neutral-500">
+            Recent Training
+          </h2>
+          <div className="flex flex-col gap-2">
+            {last7Days.map((day) => {
+              const done =
+                (day.isToday && completed) || historyDates.has(day.dateStr);
+              return (
+                <div
+                  key={day.dateStr}
+                  className={`flex items-center justify-between rounded-xl border px-4 py-3 ${
+                    done
+                      ? "border-indigo-500/20 bg-indigo-500/[0.04]"
+                      : "border-neutral-800/60 bg-[#0c0c10]"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`w-8 text-xs font-medium ${
+                        day.isToday ? "text-white" : "text-neutral-500"
+                      }`}
+                    >
+                      {day.isToday ? "Today" : day.label}
+                    </span>
+                    <span className="text-[11px] text-neutral-600">
+                      {day.dateLabel}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {allNotes[day.dateStr] &&
+                      (allNotes[day.dateStr].better.trim() ||
+                        allNotes[day.dateStr].tomorrow.trim()) && (
+                        <span className="text-[11px] text-neutral-500">
+                          Note
+                        </span>
+                      )}
+                    {done ? (
+                      <div className="flex items-center gap-1.5">
+                        <svg
+                          className="h-3.5 w-3.5 text-indigo-400"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={2.5}
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="m4.5 12.75 6 6 9-13.5"
+                          />
+                        </svg>
+                        <span className="text-xs text-indigo-400">Completed</span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-neutral-600">
+                        Not completed
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
 
         <div className="h-px w-full bg-neutral-800/60" />
 

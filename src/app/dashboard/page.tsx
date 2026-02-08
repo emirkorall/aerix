@@ -1,7 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  isCompletedToday,
+  setCompletedToday,
+  onCompletionChange,
+} from "@/src/lib/training-completion";
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
@@ -14,19 +19,42 @@ export default function Dashboard() {
     () => new Set([0, 1, 2].filter((i) => i < todayIndex))
   );
 
-  const trainedToday = completedDays.has(todayIndex);
-
-  const toggleDay = useCallback((index: number) => {
+  const syncToday = useCallback(() => {
+    const done = isCompletedToday();
     setCompletedDays((prev) => {
+      const has = prev.has(todayIndex);
+      if (done === has) return prev;
       const next = new Set(prev);
-      if (next.has(index)) {
-        next.delete(index);
-      } else {
-        next.add(index);
-      }
+      if (done) next.add(todayIndex);
+      else next.delete(todayIndex);
       return next;
     });
-  }, []);
+  }, [todayIndex]);
+
+  useEffect(() => {
+    syncToday();
+    return onCompletionChange(syncToday);
+  }, [syncToday]);
+
+  const trainedToday = completedDays.has(todayIndex);
+
+  const toggleDay = useCallback(
+    (index: number) => {
+      setCompletedDays((prev) => {
+        const next = new Set(prev);
+        if (next.has(index)) {
+          next.delete(index);
+        } else {
+          next.add(index);
+        }
+        return next;
+      });
+      if (index === todayIndex) {
+        setCompletedToday(!completedDays.has(index));
+      }
+    },
+    [todayIndex, completedDays]
+  );
 
   return (
     <main className="min-h-screen bg-[#060608] text-white">
