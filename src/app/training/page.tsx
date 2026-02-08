@@ -13,6 +13,8 @@ import {
   saveSessionNote,
 } from "@/src/lib/training-completion";
 import type { SessionNote } from "@/src/lib/training-completion";
+import { getTodayPlan, getTodayIndex, DAY_LABELS, parsePlanTier } from "@/src/lib/weekly-plan";
+import type { PlanTier } from "@/src/lib/weekly-plan";
 
 type Plan = "free" | "starter" | "pro";
 
@@ -117,14 +119,55 @@ export default function Training() {
   );
 }
 
+function TodaysPlan({ plan }: { plan: PlanTier }) {
+  const todayIndex = getTodayIndex();
+  const today = getTodayPlan(plan);
+  const dayLabel = DAY_LABELS[todayIndex];
+
+  return (
+    <>
+      <section className="py-10">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-medium text-neutral-500">
+            Today&apos;s Plan
+          </h2>
+          <span className="rounded-full bg-indigo-600/20 px-2.5 py-0.5 text-[10px] font-medium text-indigo-400">
+            {dayLabel}
+          </span>
+        </div>
+        <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/[0.03] p-5">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-white">{today.focus}</p>
+            <span className="text-xs text-neutral-500">{today.time}</span>
+          </div>
+          <ul className="mt-3 flex flex-col gap-1.5">
+            {today.goals.map((goal, i) => (
+              <li
+                key={i}
+                className="flex items-start gap-2 text-xs leading-relaxed text-neutral-400"
+              >
+                <span className="mt-1.5 block h-1 w-1 shrink-0 rounded-full bg-indigo-500/40" />
+                {goal}
+              </li>
+            ))}
+          </ul>
+          <Link
+            href={`/training/plan?plan=${plan}`}
+            className="mt-4 inline-block text-[11px] text-neutral-500 transition-colors hover:text-neutral-300"
+          >
+            View full weekly plan &rarr;
+          </Link>
+        </div>
+      </section>
+
+      <div className="h-px w-full bg-neutral-800/60" />
+    </>
+  );
+}
+
 function TrainingContent() {
   const searchParams = useSearchParams();
-  const rawPlan = searchParams.get("plan") ?? "free";
-  const plan: Plan = (["free", "starter", "pro"] as const).includes(
-    rawPlan as Plan
-  )
-    ? (rawPlan as Plan)
-    : "free";
+  const plan: Plan = parsePlanTier(searchParams.get("plan")) as Plan;
 
   const visibleBlocks = getVisibleBlocks(plan);
 
@@ -218,17 +261,17 @@ function TrainingContent() {
           <p className="mt-4 max-w-md text-base leading-relaxed text-neutral-400">
             {PLAN_INTROS[plan]}
           </p>
-          {plan !== "free" && (
-            <Link
-              href="/training/plan"
-              className="mt-4 inline-block text-xs text-neutral-500 hover:text-neutral-300"
-            >
-              View Weekly Plan &rarr;
-            </Link>
-          )}
+          <Link
+            href={`/training/plan?plan=${plan}`}
+            className="mt-4 inline-block text-xs text-neutral-500 hover:text-neutral-300"
+          >
+            View Weekly Plan &rarr;
+          </Link>
         </section>
 
         <div className="h-px w-full bg-neutral-800/60" />
+
+        <TodaysPlan plan={plan} />
 
         {!completed ? (
           <>
@@ -363,9 +406,20 @@ function TrainingContent() {
                         />
                       </div>
                     </div>
-                    <p className="mt-2 text-right text-[11px] text-neutral-600">
-                      Video by {block.credit}
-                    </p>
+                    <div className="mt-2 flex items-center justify-end gap-2.5">
+                      <a
+                        href={`https://www.youtube.com/watch?v=${block.videoId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] text-neutral-600 transition-colors hover:text-neutral-400"
+                      >
+                        Watch on YouTube &nearr;
+                      </a>
+                      <span className="text-[11px] text-neutral-700">&middot;</span>
+                      <p className="text-[11px] text-neutral-600">
+                        Video by {block.credit}
+                      </p>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -374,7 +428,7 @@ function TrainingContent() {
                 {blocksDoneCount} of {visibleBlocks.length} blocks completed
               </p>
               <p className="mt-2 text-center text-[11px] text-neutral-700">
-                Curated from the Rocket League community
+                Videos are embedded from YouTube and belong to their respective creators.
               </p>
             </section>
 

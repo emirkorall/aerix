@@ -2,74 +2,32 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-
-const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
-
-const WEEKLY_PLAN: {
-  focus: string;
-  time: string;
-  goals: [string, string?];
-}[] = [
-  {
-    focus: "Car Control",
-    time: "25 min",
-    goals: [
-      "Practice air roll and landing recovery",
-      "Focus on smooth turning at speed",
-    ],
-  },
-  {
-    focus: "Ball Control",
-    time: "20 min",
-    goals: [
-      "Dribble the ball on your car for extended periods",
-      "Work on flicks from carry position",
-    ],
-  },
-  {
-    focus: "Shooting",
-    time: "30 min",
-    goals: [
-      "Hit power shots from different angles",
-      "Practice redirect shots off the wall",
-    ],
-  },
-  {
-    focus: "Defense & Saves",
-    time: "25 min",
-    goals: [
-      "Shadow defend without overcommitting",
-      "Practice backboard saves and clears",
-    ],
-  },
-  {
-    focus: "Recoveries",
-    time: "20 min",
-    goals: [
-      "Land on all four wheels after every aerial",
-      "Chain wave dashes into play",
-    ],
-  },
-  {
-    focus: "Free Play Discipline",
-    time: "35 min",
-    goals: [
-      "Combine skills from the week in free play",
-      "Stay intentional — pick a focus each 5 minutes",
-    ],
-  },
-  {
-    focus: "Review & Light Play",
-    time: "20 min",
-    goals: [
-      "Replay one or two recent matches and note patterns",
-      "Play casually and apply what you practiced",
-    ],
-  },
-];
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
+import {
+  DAY_LABELS,
+  WEEKLY_PLANS,
+  PLAN_TIER_LABELS,
+  getTodayIndex,
+  parsePlanTier,
+} from "@/src/lib/weekly-plan";
+import type { PlanTier } from "@/src/lib/weekly-plan";
 
 export default function WeeklyPlanPage() {
-  const todayIndex = useMemo(() => (new Date().getDay() + 6) % 7, []);
+  return (
+    <Suspense>
+      <WeeklyPlanContent />
+    </Suspense>
+  );
+}
+
+const TIERS: PlanTier[] = ["free", "starter", "pro"];
+
+function WeeklyPlanContent() {
+  const searchParams = useSearchParams();
+  const plan = parsePlanTier(searchParams.get("plan"));
+  const weeklyPlan = WEEKLY_PLANS[plan];
+  const todayIndex = useMemo(() => getTodayIndex(), []);
 
   return (
     <main className="min-h-screen bg-[#060608] text-white">
@@ -90,9 +48,14 @@ export default function WeeklyPlanPage() {
         </nav>
 
         <section className="pt-20 pb-10">
-          <p className="mb-3 text-xs font-medium uppercase tracking-widest text-neutral-500">
-            Training
-          </p>
+          <div className="mb-3 flex items-center gap-3">
+            <p className="text-xs font-medium uppercase tracking-widest text-neutral-500">
+              Training
+            </p>
+            <span className="rounded-full border border-neutral-800 bg-neutral-900 px-2.5 py-0.5 text-[10px] font-medium text-neutral-400">
+              Plan: {PLAN_TIER_LABELS[plan]}
+            </span>
+          </div>
           <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
             Weekly Training Plan
           </h1>
@@ -102,11 +65,27 @@ export default function WeeklyPlanPage() {
           </p>
         </section>
 
+        <div className="flex items-center gap-1.5 pb-6">
+          {TIERS.map((tier) => (
+            <Link
+              key={tier}
+              href={`/training/plan?plan=${tier}`}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                tier === plan
+                  ? "bg-indigo-600/20 text-indigo-400"
+                  : "text-neutral-500 hover:text-neutral-300"
+              }`}
+            >
+              {PLAN_TIER_LABELS[tier]}
+            </Link>
+          ))}
+        </div>
+
         <div className="h-px w-full bg-neutral-800/60" />
 
         <section className="py-10">
           <div className="flex flex-col gap-3">
-            {WEEKLY_PLAN.map((day, i) => {
+            {weeklyPlan.map((day, i) => {
               const isToday = i === todayIndex;
 
               return (
@@ -145,18 +124,15 @@ export default function WeeklyPlanPage() {
                   </p>
 
                   <ul className="mt-2 flex flex-col gap-1">
-                    {day.goals.map(
-                      (goal, gi) =>
-                        goal && (
-                          <li
-                            key={gi}
-                            className="flex items-start gap-2 text-xs leading-relaxed text-neutral-500"
-                          >
-                            <span className="mt-1.5 block h-1 w-1 shrink-0 rounded-full bg-neutral-700" />
-                            {goal}
-                          </li>
-                        )
-                    )}
+                    {day.goals.map((goal, gi) => (
+                      <li
+                        key={gi}
+                        className="flex items-start gap-2 text-xs leading-relaxed text-neutral-500"
+                      >
+                        <span className="mt-1.5 block h-1 w-1 shrink-0 rounded-full bg-neutral-700" />
+                        {goal}
+                      </li>
+                    ))}
                   </ul>
                 </div>
               );
@@ -169,7 +145,7 @@ export default function WeeklyPlanPage() {
         <section className="py-10">
           <div className="flex flex-col gap-3">
             <Link
-              href="/training"
+              href={`/training?plan=${plan}`}
               className="flex h-11 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white hover:bg-indigo-500"
             >
               Start Today&apos;s Session

@@ -119,3 +119,26 @@ If the library breaks, AERIX must still function.
 ### Language Policy
 
 English-only for MVP. Add i18n only after proven demand.
+
+## Video Content Policy (Copyright & Safety)
+
+AERIX must avoid copyright and licensing risk.
+
+### Allowed
+
+- Embed only **public, embeddable** YouTube videos using the official `<iframe>` embed.
+- Always show **attribution** (creator/channel name) near the video.
+- Provide a **"Watch on YouTube"** link that opens the original video on YouTube.
+- Keep video usage **curated and minimal** (supporting the training plan, not a video library).
+
+### Not Allowed
+
+- Do **not** download, re-upload, or host third-party videos.
+- Do **not** copy/republish video files, thumbnails, or clips outside of official embeds.
+- Do **not** remove watermarks or modify third-party videos.
+- Avoid using copyrighted Rocket League music/trailers in AERIX-hosted media unless properly licensed.
+
+### Disclosure
+
+Include a small note on pages that embed videos:
+"Videos are embedded from YouTube and belong to their respective creators."
