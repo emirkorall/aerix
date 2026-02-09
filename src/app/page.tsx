@@ -68,7 +68,7 @@ export default function Home() {
           </p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Link
-              href="/dashboard"
+              href="/training?plan=free"
               className="group rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6 transition-colors hover:border-indigo-500/30 hover:bg-[#0e0e14]"
             >
               <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-500/10">
@@ -82,21 +82,21 @@ export default function Home() {
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z"
+                    d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"
                   />
                 </svg>
               </div>
-              <h3 className="text-sm font-semibold text-white">Dashboard</h3>
+              <h3 className="text-sm font-semibold text-white">Start Training</h3>
               <p className="mt-1.5 text-xs leading-relaxed text-neutral-500">
-                Your sessions, stats, and streaks — all in one place.
+                Jump into today&apos;s session and start improving right away.
               </p>
               <span className="mt-4 inline-block text-xs font-medium text-indigo-400 opacity-0 transition-opacity group-hover:opacity-100">
-                Open →
+                Start →
               </span>
             </Link>
 
             <Link
-              href="/training"
+              href="/progress"
               className="group rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6 transition-colors hover:border-indigo-500/30 hover:bg-[#0e0e14]"
             >
               <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-500/10">
@@ -114,9 +114,9 @@ export default function Home() {
                   />
                 </svg>
               </div>
-              <h3 className="text-sm font-semibold text-white">Training</h3>
+              <h3 className="text-sm font-semibold text-white">View Progress</h3>
               <p className="mt-1.5 text-xs leading-relaxed text-neutral-500">
-                Structured programs for mechanics, game sense, and consistency.
+                See your streaks, weekly stats, and session notes over time.
               </p>
               <span className="mt-4 inline-block text-xs font-medium text-indigo-400 opacity-0 transition-opacity group-hover:opacity-100">
                 Open →

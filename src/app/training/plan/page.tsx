@@ -9,6 +9,7 @@ import {
   WEEKLY_PLANS,
   PLAN_TIER_LABELS,
   getTodayIndex,
+  getTodayPlan,
   parsePlanTier,
 } from "@/src/lib/weekly-plan";
 import type { PlanTier } from "@/src/lib/weekly-plan";
@@ -134,6 +135,14 @@ function WeeklyPlanContent() {
                       </li>
                     ))}
                   </ul>
+                  {isToday && (
+                    <Link
+                      href={`/training?plan=${plan}#${day.blockSlug}`}
+                      className="mt-3 inline-block text-xs font-medium text-indigo-400 transition-colors hover:text-indigo-300"
+                    >
+                      Start this session &rarr;
+                    </Link>
+                  )}
                 </div>
               );
             })}
@@ -145,7 +154,7 @@ function WeeklyPlanContent() {
         <section className="py-10">
           <div className="flex flex-col gap-3">
             <Link
-              href={`/training?plan=${plan}`}
+              href={`/training?plan=${plan}#${getTodayPlan(plan).blockSlug}`}
               className="flex h-11 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white hover:bg-indigo-500"
             >
               Start Today&apos;s Session
@@ -161,12 +170,19 @@ function WeeklyPlanContent() {
 
         <div className="h-px w-full bg-neutral-800/60" />
 
-        <footer className="flex items-center justify-center py-8">
+        <footer className="flex items-center justify-center gap-4 py-8">
+          <Link
+            href="/dashboard"
+            className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
+          >
+            Dashboard
+          </Link>
+          <span className="text-neutral-800">&middot;</span>
           <Link
             href="/"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            &larr; Back to home
+            Home
           </Link>
         </footer>
       </div>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   isCompletedToday,
   setCompletedToday,
@@ -11,10 +11,18 @@ import {
   getToday,
   getSessionNotes,
   saveSessionNote,
+  getSessionTags,
+  saveSessionTags,
+  FOCUS_TAGS,
+  getSessionDurations,
+  saveSessionDuration,
+  DURATION_OPTIONS,
 } from "@/src/lib/training-completion";
-import type { SessionNote } from "@/src/lib/training-completion";
+import type { SessionNote, FocusTag } from "@/src/lib/training-completion";
 import { getTodayPlan, getTodayIndex, DAY_LABELS, parsePlanTier } from "@/src/lib/weekly-plan";
 import type { PlanTier } from "@/src/lib/weekly-plan";
+import { TRAINING_PROGRAMS, getBlocksBySection } from "@/src/lib/trainingPrograms";
+import type { TrainingBlock } from "@/src/lib/trainingPrograms";
 
 type Plan = "free" | "starter" | "pro";
 
@@ -22,13 +30,6 @@ const PLAN_LABELS: Record<Plan, string> = {
   free: "Free",
   starter: "Starter",
   pro: "Pro",
-};
-
-const PLAN_INTROS: Record<Plan, string> = {
-  free: "Consistency matters more than intensity. A short, focused session beats a long, unfocused one. Show up, do the work, and move on.",
-  starter:
-    "Your Starter plan gives you a structured path. Each session builds on the last — follow the flow and trust the process.",
-  pro: "You\u2019re training with intent. Push your comfort zone each session, but stay controlled. Precision under pressure is the goal.",
 };
 
 const tasks = [
@@ -54,62 +55,6 @@ const tasks = [
   },
 ];
 
-const focusBlocks = [
-  {
-    id: "car-control",
-    skill: "Car Control",
-    description:
-      "Good car control is the foundation of everything in Rocket League. Before you can hit advanced shots, you need to feel comfortable moving your car in the air and on the ground. This drill builds that muscle memory.",
-    videoId: "ed8owajA0Lc",
-    credit: "Kevpert",
-    tier: "free" as Plan,
-  },
-  {
-    id: "basic-aerials",
-    skill: "Basic Aerials",
-    description:
-      "Aerials open up an entirely new dimension of play. Start with simple touches — getting off the ground with control matters more than hitting the ball hard. Accuracy first, power later.",
-    videoId: "R3k9O-k_XC0",
-    credit: "Wayton Pilkin",
-    tier: "free" as Plan,
-  },
-  {
-    id: "positioning",
-    skill: "Rotation & Positioning",
-    description:
-      "Mechanics win individual plays, but positioning wins games. Understanding when to challenge, when to rotate back, and where to be is what separates improving players from stuck ones.",
-    videoId: "THcMLWOEc_o",
-    credit: "SunlessKhan",
-    tier: "free" as Plan,
-  },
-  {
-    id: "power-shots",
-    skill: "Power Shots & Accuracy",
-    description:
-      "Clean, deliberate shots win more games than flashy ones. Focus on hitting the ball with the nose of your car and placing it where defenders aren\u2019t. Consistency here translates directly to wins.",
-    videoId: "lsSq0cFEAcE",
-    credit: "Thanovic",
-    tier: "starter" as Plan,
-  },
-  {
-    id: "fast-aerials",
-    skill: "Fast Aerials & Air Control",
-    description:
-      "Fast aerials let you contest the ball before your opponent can react. Combine jump timing with boost management and directional air roll for maximum efficiency in the air.",
-    videoId: "lkBZg0Ldhls",
-    credit: "Virge",
-    tier: "pro" as Plan,
-  },
-];
-
-const TIER_ORDER: Plan[] = ["free", "starter", "pro"];
-
-function getVisibleBlocks(plan: Plan) {
-  const tierIndex = TIER_ORDER.indexOf(plan);
-  return focusBlocks.filter(
-    (b) => TIER_ORDER.indexOf(b.tier) <= tierIndex
-  );
-}
 
 export default function Training() {
   return (
@@ -119,7 +64,7 @@ export default function Training() {
   );
 }
 
-function TodaysPlan({ plan }: { plan: PlanTier }) {
+function TodaysPlan({ plan, onJumpToDrill }: { plan: PlanTier; onJumpToDrill: (slug: string) => void }) {
   const todayIndex = getTodayIndex();
   const today = getTodayPlan(plan);
   const dayLabel = DAY_LABELS[todayIndex];
@@ -151,12 +96,21 @@ function TodaysPlan({ plan }: { plan: PlanTier }) {
               </li>
             ))}
           </ul>
-          <Link
-            href={`/training/plan?plan=${plan}`}
-            className="mt-4 inline-block text-[11px] text-neutral-500 transition-colors hover:text-neutral-300"
-          >
-            View full weekly plan &rarr;
-          </Link>
+          <div className="mt-4 flex items-center justify-between">
+            <a
+              href={`#${today.blockSlug}`}
+              onClick={() => onJumpToDrill(today.blockSlug)}
+              className="text-[11px] font-medium text-indigo-400 transition-colors hover:text-indigo-300"
+            >
+              Jump to today&apos;s drill &darr;
+            </a>
+            <Link
+              href={`/training/plan?plan=${plan}`}
+              className="text-[11px] text-neutral-500 transition-colors hover:text-neutral-300"
+            >
+              View full weekly plan &rarr;
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -165,11 +119,210 @@ function TodaysPlan({ plan }: { plan: PlanTier }) {
   );
 }
 
+function VideoBlock({
+  block,
+  done,
+  onToggle,
+  highlighted,
+}: {
+  block: TrainingBlock;
+  done: boolean;
+  onToggle: () => void;
+  highlighted: boolean;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (highlighted && ref.current) {
+      ref.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [highlighted]);
+
+  return (
+    <div
+      ref={ref}
+      id={block.slug}
+      className={`rounded-xl border p-5 transition-colors ${
+        highlighted
+          ? "ring-1 ring-indigo-500/50 border-indigo-500/40 bg-indigo-500/[0.06]"
+          : done
+            ? "border-indigo-500/30 bg-indigo-500/[0.05]"
+            : "border-neutral-800/60 bg-[#0c0c10]"
+      }`}
+    >
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <h3
+            className={`text-sm font-semibold ${
+              done ? "text-indigo-300" : "text-white"
+            }`}
+          >
+            {block.title}
+          </h3>
+          <ul className="mt-2 flex flex-col gap-1">
+            {block.goals.map((goal, i) => (
+              <li
+                key={i}
+                className="flex items-start gap-2 text-xs leading-relaxed text-neutral-500"
+              >
+                <span className="mt-1.5 block h-1 w-1 shrink-0 rounded-full bg-indigo-500/40" />
+                {goal}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <button
+          onClick={onToggle}
+          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
+            done
+              ? "border-indigo-500 bg-indigo-600"
+              : "border-neutral-700 bg-transparent hover:border-neutral-600"
+          }`}
+        >
+          {done && (
+            <svg
+              className="h-3 w-3 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={3}
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="m4.5 12.75 6 6 9-13.5"
+              />
+            </svg>
+          )}
+        </button>
+      </div>
+
+      <div className="overflow-hidden rounded-lg border border-neutral-800/60">
+        <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+          <iframe
+            className="absolute inset-0 h-full w-full"
+            src={`https://www.youtube-nocookie.com/embed/${block.videoId}`}
+            title={block.title}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      </div>
+      <div className="mt-2 flex items-center justify-between">
+        <p className="text-[11px] text-neutral-700">
+          If the embed doesn&apos;t load, use &ldquo;Watch on YouTube&rdquo;.
+        </p>
+        <div className="flex items-center gap-2.5">
+          <a
+            href={`https://www.youtube.com/watch?v=${block.videoId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] text-neutral-600 transition-colors hover:text-neutral-400"
+          >
+            Watch on YouTube &nearr;
+          </a>
+          <span className="text-[11px] text-neutral-700">&middot;</span>
+          <p className="text-[11px] text-neutral-600">By {block.creator}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const LOCKED_TIER_BENEFITS: Record<"starter" | "pro", string> = {
+  starter: "Structured drills and targeted practice to break through plateaus.",
+  pro: "Advanced mechanics, competitive game sense, and pro-level analysis.",
+};
+
+function LockedTierPreview({ tier }: { tier: "starter" | "pro" }) {
+  const program = TRAINING_PROGRAMS[tier];
+  const sections = getBlocksBySection(tier);
+  const benefit = LOCKED_TIER_BENEFITS[tier];
+
+  return (
+    <section className="py-8">
+      <div className="mb-5 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h2 className="text-sm font-medium text-neutral-500">
+            {program.label} Program
+          </h2>
+          <span className="rounded-full border border-neutral-800 bg-neutral-900 px-2 py-0.5 text-[10px] font-medium text-neutral-500">
+            {program.blocks.length} blocks
+          </span>
+        </div>
+        <span className="flex items-center gap-1.5 text-[11px] text-neutral-600">
+          <svg
+            className="h-3 w-3"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"
+            />
+          </svg>
+          Locked
+        </span>
+      </div>
+
+      <div className="relative overflow-hidden rounded-xl border border-neutral-800/40 bg-[#0a0a0e]">
+        <div className="divide-y divide-neutral-800/30 opacity-50">
+          {sections.map(({ section, blocks }) => (
+            <div key={section} className="px-5 py-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-neutral-400">
+                  {section}
+                </span>
+                <span className="text-[10px] text-neutral-600">
+                  {blocks.length} {blocks.length === 1 ? "block" : "blocks"}
+                </span>
+              </div>
+              <div className="mt-2.5 flex flex-col gap-1.5">
+                {blocks.map((block) => (
+                  <div key={block.id} className="flex items-center gap-2">
+                    <div className="h-6 w-10 shrink-0 rounded bg-neutral-800/60" />
+                    <span className="text-xs text-neutral-600">
+                      {block.title}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[#0a0a0e] to-transparent" />
+      </div>
+
+      <div className="mt-4 flex flex-col items-center gap-3">
+        <p className="text-center text-xs leading-relaxed text-neutral-500">
+          {benefit}
+        </p>
+        <Link
+          href={`/upgrade?plan=${tier}`}
+          className="flex h-9 w-full items-center justify-center rounded-lg bg-indigo-600 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
+        >
+          Unlock {program.label}
+        </Link>
+        <Link
+          href={`/plans/${tier}`}
+          className="text-xs text-neutral-500 transition-colors hover:text-neutral-300"
+        >
+          See {program.label} details &rarr;
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 function TrainingContent() {
   const searchParams = useSearchParams();
   const plan: Plan = parsePlanTier(searchParams.get("plan")) as Plan;
 
-  const visibleBlocks = getVisibleBlocks(plan);
+  const program = TRAINING_PROGRAMS[plan];
+  const sections = getBlocksBySection(plan);
 
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [blocksDone, setBlocksDone] = useState<Record<string, boolean>>({});
@@ -179,6 +332,20 @@ function TrainingContent() {
   const [notes, setNotes] = useState<SessionNote>({ better: "", tomorrow: "" });
   const [allNotes, setAllNotes] = useState<Record<string, SessionNote>>({});
   const [notesSaved, setNotesSaved] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<FocusTag[]>([]);
+  const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
+  const [activeSlug, setActiveSlug] = useState("");
+
+  useEffect(() => {
+    const hash = window.location.hash.slice(1);
+    if (hash) setActiveSlug(hash);
+  }, []);
+
+  useEffect(() => {
+    if (!activeSlug) return;
+    const timer = setTimeout(() => setActiveSlug(""), 3000);
+    return () => clearTimeout(timer);
+  }, [activeSlug]);
 
   useEffect(() => {
     setCompleted(isCompletedToday());
@@ -189,6 +356,14 @@ function TrainingContent() {
     if (all[today]) {
       setNotes(all[today]);
       setNotesSaved(true);
+    }
+    const tags = getSessionTags();
+    if (tags[today]) {
+      setSelectedTags(tags[today]);
+    }
+    const durations = getSessionDurations();
+    if (durations[today]) {
+      setSelectedDuration(durations[today]);
     }
     return onCompletionChange(() => {
       setCompleted(isCompletedToday());
@@ -212,10 +387,6 @@ function TrainingContent() {
     }
     return days;
   }, []);
-
-  const [proTrack, setProTrack] = useState<"mechanics" | "game-sense">(
-    "mechanics"
-  );
 
   function toggle(id: string) {
     setChecked((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -259,7 +430,7 @@ function TrainingContent() {
             Today&apos;s Training
           </h1>
           <p className="mt-4 max-w-md text-base leading-relaxed text-neutral-400">
-            {PLAN_INTROS[plan]}
+            {program.tagline}
           </p>
           <Link
             href={`/training/plan?plan=${plan}`}
@@ -271,7 +442,7 @@ function TrainingContent() {
 
         <div className="h-px w-full bg-neutral-800/60" />
 
-        <TodaysPlan plan={plan} />
+        <TodaysPlan plan={plan} onJumpToDrill={setActiveSlug} />
 
         {!completed ? (
           <>
@@ -335,192 +506,72 @@ function TrainingContent() {
 
             <section className="py-10">
               <div className="mb-6">
-                <h2 className="text-sm font-medium text-neutral-500">
-                  Today&apos;s Training Focus
-                </h2>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-medium text-neutral-500">
+                    Training Program
+                  </h2>
+                  <span className="text-xs text-neutral-600">
+                    {program.blocks.length} blocks
+                  </span>
+                </div>
                 <p className="mt-2 text-xs leading-relaxed text-neutral-600">
                   Watch, practice, and check off each block when you&apos;re
                   done. No rush — even one block is progress.
                 </p>
               </div>
 
-              <div className="flex flex-col gap-5">
-                {visibleBlocks.map((block) => (
-                  <div
-                    key={block.id}
-                    className={`rounded-xl border p-5 transition-colors ${
-                      blocksDone[block.id]
-                        ? "border-indigo-500/30 bg-indigo-500/[0.05]"
-                        : "border-neutral-800/60 bg-[#0c0c10]"
-                    }`}
+              <div className="flex flex-col gap-4">
+                {sections.map(({ section, blocks }) => (
+                  <details
+                    key={section}
+                    open
+                    className="group rounded-xl border border-neutral-800/60 bg-[#0c0c10]"
                   >
-                    <div className="mb-4 flex items-start justify-between gap-3">
-                      <div>
-                        <h3
-                          className={`text-sm font-semibold ${
-                            blocksDone[block.id]
-                              ? "text-indigo-300"
-                              : "text-white"
-                          }`}
-                        >
-                          {block.skill}
-                        </h3>
-                        <p className="mt-1.5 text-xs leading-relaxed text-neutral-500">
-                          {block.description}
-                        </p>
+                    <summary className="flex cursor-pointer items-center justify-between px-5 py-4 select-none">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-semibold text-white">
+                          {section}
+                        </span>
+                        <span className="rounded-full bg-neutral-800 px-2 py-0.5 text-[10px] font-medium text-neutral-400">
+                          {blocks.filter((b) => blocksDone[b.id]).length}/{blocks.length}
+                        </span>
                       </div>
-                      <button
-                        onClick={() => toggleBlock(block.id)}
-                        className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
-                          blocksDone[block.id]
-                            ? "border-indigo-500 bg-indigo-600"
-                            : "border-neutral-700 bg-transparent hover:border-neutral-600"
-                        }`}
+                      <svg
+                        className="h-4 w-4 text-neutral-600 transition-transform group-open:rotate-180"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={2}
+                        stroke="currentColor"
                       >
-                        {blocksDone[block.id] && (
-                          <svg
-                            className="h-3 w-3 text-white"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            strokeWidth={3}
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="m4.5 12.75 6 6 9-13.5"
-                            />
-                          </svg>
-                        )}
-                      </button>
-                    </div>
-
-                    <div className="overflow-hidden rounded-lg border border-neutral-800/60">
-                      <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
-                        <iframe
-                          className="absolute inset-0 h-full w-full"
-                          src={`https://www.youtube-nocookie.com/embed/${block.videoId}`}
-                          title={block.skill}
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="m19.5 8.25-7.5 7.5-7.5-7.5"
                         />
-                      </div>
+                      </svg>
+                    </summary>
+                    <div className="flex flex-col gap-4 px-4 pb-4">
+                      {blocks.map((block) => (
+                        <VideoBlock
+                          key={block.id}
+                          block={block}
+                          done={!!blocksDone[block.id]}
+                          onToggle={() => toggleBlock(block.id)}
+                          highlighted={activeSlug === block.slug}
+                        />
+                      ))}
                     </div>
-                    <div className="mt-2 flex items-center justify-end gap-2.5">
-                      <a
-                        href={`https://www.youtube.com/watch?v=${block.videoId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[11px] text-neutral-600 transition-colors hover:text-neutral-400"
-                      >
-                        Watch on YouTube &nearr;
-                      </a>
-                      <span className="text-[11px] text-neutral-700">&middot;</span>
-                      <p className="text-[11px] text-neutral-600">
-                        Video by {block.credit}
-                      </p>
-                    </div>
-                  </div>
+                  </details>
                 ))}
               </div>
 
               <p className="mt-4 text-center text-xs text-neutral-600">
-                {blocksDoneCount} of {visibleBlocks.length} blocks completed
+                {blocksDoneCount} of {program.blocks.length} blocks completed
               </p>
               <p className="mt-2 text-center text-[11px] text-neutral-700">
                 Videos are embedded from YouTube and belong to their respective creators.
               </p>
             </section>
-
-            {plan === "starter" && (
-              <>
-                <div className="h-px w-full bg-neutral-800/60" />
-                <section className="py-10">
-                  <h2 className="mb-4 text-sm font-medium text-neutral-500">
-                    Coach Note
-                  </h2>
-                  <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/[0.03] p-5">
-                    <p className="text-sm leading-relaxed text-neutral-300">
-                      Focus on one mechanic per session rather than switching
-                      between many. Depth beats breadth — 20 focused minutes
-                      will improve you more than an hour of scattered practice.
-                    </p>
-                    <p className="mt-3 text-xs text-neutral-600">
-                      Tip from the Aerix training philosophy
-                    </p>
-                  </div>
-                </section>
-              </>
-            )}
-
-            {plan === "pro" && (
-              <>
-                <div className="h-px w-full bg-neutral-800/60" />
-                <section className="py-10">
-                  <h2 className="mb-4 text-sm font-medium text-neutral-500">
-                    Pro Track
-                  </h2>
-                  <p className="mb-5 text-xs leading-relaxed text-neutral-600">
-                    Choose a focus for this session. Both paths build toward
-                    the same goal — becoming a more complete player.
-                  </p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setProTrack("mechanics")}
-                      className={`rounded-xl border p-4 text-left ${
-                        proTrack === "mechanics"
-                          ? "border-indigo-500/30 bg-indigo-500/[0.05]"
-                          : "border-neutral-800/60 bg-[#0c0c10] hover:border-neutral-700/60"
-                      }`}
-                    >
-                      <p
-                        className={`text-sm font-medium ${
-                          proTrack === "mechanics"
-                            ? "text-indigo-300"
-                            : "text-white"
-                        }`}
-                      >
-                        Mechanics
-                      </p>
-                      <p className="mt-1 text-xs text-neutral-500">
-                        Aerial control, flicks, and recoveries
-                      </p>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setProTrack("game-sense")}
-                      className={`rounded-xl border p-4 text-left ${
-                        proTrack === "game-sense"
-                          ? "border-indigo-500/30 bg-indigo-500/[0.05]"
-                          : "border-neutral-800/60 bg-[#0c0c10] hover:border-neutral-700/60"
-                      }`}
-                    >
-                      <p
-                        className={`text-sm font-medium ${
-                          proTrack === "game-sense"
-                            ? "text-indigo-300"
-                            : "text-white"
-                        }`}
-                      >
-                        Game Sense
-                      </p>
-                      <p className="mt-1 text-xs text-neutral-500">
-                        Positioning, reads, and decision-making
-                      </p>
-                    </button>
-                  </div>
-                  <p className="mt-4 text-center text-xs text-neutral-600">
-                    Today&apos;s focus:{" "}
-                    <span className="text-neutral-400">
-                      {proTrack === "mechanics"
-                        ? "Mechanics"
-                        : "Game Sense"}
-                    </span>
-                  </p>
-                </section>
-              </>
-            )}
 
             <div className="h-px w-full bg-neutral-800/60" />
 
@@ -653,6 +704,129 @@ function TrainingContent() {
                 </button>
               </div>
             </section>
+
+            <div className="h-px w-full bg-neutral-800/60" />
+
+            <section className="py-10">
+              <h2 className="mb-2 text-sm font-medium text-neutral-500">
+                Focus Tags
+              </h2>
+              <p className="mb-6 text-xs text-neutral-600">
+                What did you work on today? Pick up to 2.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {FOCUS_TAGS.map((tag) => {
+                  const active = selectedTags.includes(tag);
+                  return (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => {
+                        const next = active
+                          ? selectedTags.filter((t) => t !== tag)
+                          : selectedTags.length < 2
+                            ? [...selectedTags, tag]
+                            : selectedTags;
+                        setSelectedTags(next);
+                        saveSessionTags(getToday(), next);
+                      }}
+                      className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                        active
+                          ? "border-indigo-500/40 bg-indigo-600/20 text-indigo-300"
+                          : "border-neutral-800/60 bg-[#0c0c10] text-neutral-500 hover:border-neutral-700 hover:text-neutral-400"
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  );
+                })}
+              </div>
+              {selectedTags.length === 2 && (
+                <p className="mt-3 text-[11px] text-neutral-600">
+                  Max 2 tags selected.
+                </p>
+              )}
+            </section>
+
+            <div className="h-px w-full bg-neutral-800/60" />
+
+            <section className="py-10">
+              <h2 className="mb-2 text-sm font-medium text-neutral-500">
+                Session Duration
+              </h2>
+              <p className="mb-6 text-xs text-neutral-600">
+                Roughly how long did you train?
+              </p>
+              <div className="flex gap-2">
+                {DURATION_OPTIONS.map((mins) => {
+                  const active = selectedDuration === mins;
+                  const label = mins === 60 ? "60m+" : `${mins}m`;
+                  return (
+                    <button
+                      key={mins}
+                      type="button"
+                      onClick={() => {
+                        setSelectedDuration(mins);
+                        saveSessionDuration(getToday(), mins);
+                      }}
+                      className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors ${
+                        active
+                          ? "border-indigo-500/40 bg-indigo-600/20 text-indigo-300"
+                          : "border-neutral-800/60 bg-[#0c0c10] text-neutral-500 hover:border-neutral-700 hover:text-neutral-400"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <div className="h-px w-full bg-neutral-800/60" />
+
+            <section className="py-10">
+              <div className="flex flex-col gap-3">
+                <Link
+                  href="/dashboard"
+                  className="flex h-11 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white hover:bg-indigo-500"
+                >
+                  Back to Dashboard
+                </Link>
+                <Link
+                  href={`/training/plan?plan=${plan}`}
+                  className="flex h-11 items-center justify-center rounded-lg border border-neutral-800/60 text-sm font-medium text-neutral-400 hover:border-neutral-700 hover:text-neutral-300"
+                >
+                  View Weekly Plan
+                </Link>
+              </div>
+            </section>
+          </>
+        )}
+
+        {plan === "free" && (
+          <>
+            <div className="h-px w-full bg-neutral-800/60" />
+
+            <div className="pt-10 pb-2">
+              <p className="text-center text-xs text-neutral-600">
+                See what&apos;s included in other plans
+              </p>
+            </div>
+
+            <LockedTierPreview tier="starter" />
+
+            <div className="h-px w-full bg-neutral-800/60" />
+
+            <LockedTierPreview tier="pro" />
+
+            <div className="flex justify-center pb-2 pt-1">
+              <Link
+                href="/pricing"
+                className="text-xs text-neutral-500 transition-colors hover:text-neutral-300"
+              >
+                Compare all plans &rarr;
+              </Link>
+            </div>
           </>
         )}
 
@@ -726,12 +900,19 @@ function TrainingContent() {
 
         <div className="h-px w-full bg-neutral-800/60" />
 
-        <footer className="flex items-center justify-center py-8">
+        <footer className="flex items-center justify-center gap-4 py-8">
+          <Link
+            href="/dashboard"
+            className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
+          >
+            Dashboard
+          </Link>
+          <span className="text-neutral-800">&middot;</span>
           <Link
             href="/"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            ← Back to home
+            Home
           </Link>
         </footer>
       </div>

@@ -35,8 +35,9 @@ const plans = {
 
 type PlanKey = keyof typeof plans;
 
-function isValidPlan(value: string | undefined): value is PlanKey {
-  return value === "starter" || value === "pro";
+function parsePlan(value: string | undefined): PlanKey {
+  if (value === "pro") return "pro";
+  return "starter";
 }
 
 export default async function UpgradePage({
@@ -45,42 +46,8 @@ export default async function UpgradePage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const params = await searchParams;
-  const planParam = typeof params.plan === "string" ? params.plan : undefined;
-
-  if (!isValidPlan(planParam)) {
-    return (
-      <main className="min-h-screen bg-[#060608] text-white">
-        <div className="mx-auto max-w-xl px-6">
-          <nav className="flex items-center justify-between py-6">
-            <Link
-              href="/"
-              className="text-sm font-semibold tracking-[0.2em] uppercase text-white"
-            >
-              Aerix
-            </Link>
-          </nav>
-
-          <section className="flex flex-col items-center pt-32 pb-16 text-center">
-            <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-              No plan selected
-            </h1>
-            <p className="mt-4 max-w-sm text-sm leading-relaxed text-neutral-400">
-              It looks like you arrived here without choosing a plan. Head over
-              to our pricing page to see what&apos;s available.
-            </p>
-            <Link
-              href="/pricing"
-              className="mt-8 inline-flex h-10 items-center justify-center rounded-lg bg-indigo-600 px-6 text-sm font-semibold text-white hover:bg-indigo-500"
-            >
-              View Plans
-            </Link>
-          </section>
-        </div>
-      </main>
-    );
-  }
-
-  const plan = plans[planParam];
+  const planKey = parsePlan(typeof params.plan === "string" ? params.plan : undefined);
+  const plan = plans[planKey];
 
   return (
     <main className="min-h-screen bg-[#060608] text-white">
@@ -151,25 +118,37 @@ export default async function UpgradePage({
 
         <div className="mt-6 rounded-xl border border-indigo-500/10 bg-indigo-500/[0.04] p-5 text-center">
           <p className="text-sm leading-relaxed text-indigo-300/80">
-            Payments are coming soon. You&apos;ll be able to upgrade here.
+            Payments are coming soon. For now this is a preview.
           </p>
         </div>
 
-        <div className="mt-6">
-          <button
-            disabled
-            className="flex h-11 w-full cursor-not-allowed items-center justify-center rounded-lg bg-indigo-600/50 text-sm font-semibold text-white/50"
+        <div className="mt-6 flex flex-col gap-3">
+          <Link
+            href="/pricing"
+            className="flex h-11 w-full items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
           >
-            Subscribe — Coming Soon
-          </button>
+            View Pricing
+          </Link>
+          <Link
+            href="/training"
+            className="flex h-11 w-full items-center justify-center rounded-lg border border-neutral-800/60 text-sm font-medium text-neutral-400 transition-colors hover:border-neutral-700 hover:text-neutral-300"
+          >
+            Back to Training
+          </Link>
+          <Link
+            href={`/plans/${planKey}`}
+            className="mt-1 text-center text-xs text-neutral-500 transition-colors hover:text-neutral-300"
+          >
+            See {plan.name} plan details &rarr;
+          </Link>
         </div>
 
         <footer className="flex items-center justify-center py-10">
           <Link
-            href="/pricing"
-            className="text-xs text-neutral-600 hover:text-neutral-400"
+            href="/"
+            className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            ← Back to pricing
+            &larr; Back to home
           </Link>
         </footer>
       </div>

@@ -61,7 +61,7 @@ export default function Pricing() {
             Simple pricing, no surprises.
           </h1>
           <p className="mt-4 max-w-md text-base leading-relaxed text-neutral-400">
-            Free for solo training. Pay to play with others. Cancel anytime.
+            Free to start training. Upgrade for deeper tools. Cancel anytime.
           </p>
 
           <div className="mt-6 flex items-center gap-1 rounded-lg border border-neutral-800/60 bg-[#0c0c10] p-1">
@@ -108,17 +108,15 @@ export default function Pricing() {
             </Link>
 
             <ul className="flex flex-col gap-3 text-sm text-neutral-400">
-              <Feature icon={check}>Daily training tracking</Feature>
-              <Feature icon={check}>Basic streak system</Feature>
-              <Feature icon={check}>Last 7 days of history</Feature>
+              <Feature icon={check}>Daily training + streak tracking</Feature>
+              <Feature icon={check}>Basic weekly progress view</Feature>
+              <Feature icon={check}>Session notes after each day</Feature>
+              <Feature icon={check}>3 training blocks with videos</Feature>
               <Feature icon={dash}>
-                <span className="text-neutral-600">Duo / Trio finder</span>
+                <span className="text-neutral-600">Focus tags &amp; time tracking (limited)</span>
               </Feature>
               <Feature icon={dash}>
-                <span className="text-neutral-600">Streak protection</span>
-              </Feature>
-              <Feature icon={dash}>
-                <span className="text-neutral-600">Weekly &amp; monthly summaries</span>
+                <span className="text-neutral-600">Insights &amp; deeper analysis</span>
               </Feature>
             </ul>
           </div>
@@ -130,7 +128,7 @@ export default function Pricing() {
 
             <div className="mb-6">
               <h2 className="text-base font-semibold text-white">Starter</h2>
-              <p className="mt-1 text-xs text-neutral-500">Train &amp; play with others</p>
+              <p className="mt-1 text-xs text-neutral-500">Train smarter, track everything</p>
             </div>
 
             <p className="mb-6">
@@ -139,28 +137,32 @@ export default function Pricing() {
             </p>
 
             <Link
-              href="/plans/starter"
+              href="/upgrade?plan=starter"
               className="mb-8 flex h-10 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
             >
               Subscribe
             </Link>
 
             <ul className="flex flex-col gap-3 text-sm text-neutral-400">
-              <Feature icon={check}>Daily training tracking</Feature>
-              <Feature icon={check}>Basic streak system</Feature>
-              <Feature icon={check}>Full training history</Feature>
+              <Feature icon={check}>Everything in Free</Feature>
               <Feature icon={checkAccent}>
-                <span className="text-indigo-300">Duo / Trio finder</span>
+                <span className="text-indigo-300">6 training blocks with videos</span>
               </Feature>
-              <Feature icon={check}>1 streak save per month</Feature>
-              <Feature icon={dash}>
-                <span className="text-neutral-600">Weekly &amp; monthly summaries</span>
+              <Feature icon={checkAccent}>
+                <span className="text-indigo-300">Full weekly plan depth</span>
               </Feature>
+              <Feature icon={checkAccent}>
+                <span className="text-indigo-300">Focus tags &amp; session duration tracking</span>
+              </Feature>
+              <Feature icon={checkAccent}>
+                <span className="text-indigo-300">Personalized weekly insights</span>
+              </Feature>
+              <Feature icon={check}>Manual rank tracking</Feature>
             </ul>
 
             <div className="mt-6 rounded-lg border border-indigo-500/10 bg-indigo-500/[0.05] px-3.5 py-2.5">
               <p className="text-xs leading-relaxed text-indigo-300/80">
-                Unlocks matchmaking — find duos and trios who actually want to improve.
+                See what you practiced, how long, and what&apos;s improving — all in one place.
               </p>
             </div>
           </div>
@@ -177,21 +179,29 @@ export default function Pricing() {
             </p>
 
             <Link
-              href="/plans/pro"
+              href="/upgrade?plan=pro"
               className="mb-8 flex h-10 items-center justify-center rounded-lg border border-neutral-800 text-sm font-medium text-neutral-300 transition-colors hover:border-neutral-600 hover:text-white"
             >
               Subscribe
             </Link>
 
             <ul className="flex flex-col gap-3 text-sm text-neutral-400">
-              <Feature icon={check}>Daily training tracking</Feature>
-              <Feature icon={check}>Extended streak protection</Feature>
-              <Feature icon={check}>Full training history</Feature>
+              <Feature icon={check}>Everything in Starter</Feature>
               <Feature icon={checkAccent}>
-                <span className="text-indigo-300">Priority in Duo / Trio finder</span>
+                <span className="text-indigo-300">9 advanced training blocks</span>
               </Feature>
-              <Feature icon={check}>3 streak saves per month</Feature>
-              <Feature icon={check}>Weekly &amp; monthly summaries</Feature>
+              <Feature icon={checkAccent}>
+                <span className="text-indigo-300">Rank trend insights</span>
+              </Feature>
+              <Feature icon={check}>Deeper weekly summaries</Feature>
+              <Feature icon={check}>
+                Competitive mindset tools{" "}
+                <span className="text-neutral-600">(coming soon)</span>
+              </Feature>
+              <Feature icon={check}>
+                Duo / Trio finder{" "}
+                <span className="text-neutral-600">(coming soon)</span>
+              </Feature>
             </ul>
           </div>
         </div>
@@ -204,12 +214,13 @@ export default function Pricing() {
 
         <section className="py-16">
           <h3 className="mb-6 text-center text-sm font-medium text-neutral-500">
-            Why is matchmaking paid?
+            Why pay?
           </h3>
           <p className="mx-auto max-w-lg text-center text-sm leading-relaxed text-neutral-500">
-            Running matchmaking, chat, and player coordination costs real money to keep reliable.
-            Free players still get full access to training tools — paying unlocks playing
-            together, which is where AERIX gets fun. We think that&apos;s a fair deal.
+            Free gives you real training tools — streaks, progress, and session notes. Starter
+            and Pro unlock more drills, deeper tracking, and personalized insights so you can
+            see patterns in how you practice. We build for players who want to improve, and
+            every dollar goes back into making AERIX better.
           </p>
         </section>
 

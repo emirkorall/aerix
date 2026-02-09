@@ -12,12 +12,15 @@ export interface WeeklyPlanDay {
   focus: string;
   time: string;
   goals: string[];
+  /** Slug of the training block this day maps to. */
+  blockSlug: string;
 }
 
 const FREE_PLAN: WeeklyPlanDay[] = [
   {
     focus: "Car Control",
     time: "25 min",
+    blockSlug: "car-control",
     goals: [
       "Practice air roll and landing recovery",
       "Focus on smooth turning at speed",
@@ -26,6 +29,7 @@ const FREE_PLAN: WeeklyPlanDay[] = [
   {
     focus: "Ball Control",
     time: "20 min",
+    blockSlug: "ground-dribble",
     goals: [
       "Dribble the ball on your car for extended periods",
       "Work on flicks from carry position",
@@ -34,6 +38,7 @@ const FREE_PLAN: WeeklyPlanDay[] = [
   {
     focus: "Shooting",
     time: "30 min",
+    blockSlug: "car-control",
     goals: [
       "Hit power shots from different angles",
       "Practice redirect shots off the wall",
@@ -42,6 +47,7 @@ const FREE_PLAN: WeeklyPlanDay[] = [
   {
     focus: "Defense & Saves",
     time: "25 min",
+    blockSlug: "rotation",
     goals: [
       "Shadow defend without overcommitting",
       "Practice backboard saves and clears",
@@ -50,6 +56,7 @@ const FREE_PLAN: WeeklyPlanDay[] = [
   {
     focus: "Recoveries",
     time: "20 min",
+    blockSlug: "car-control",
     goals: [
       "Land on all four wheels after every aerial",
       "Chain wave dashes into play",
@@ -58,6 +65,7 @@ const FREE_PLAN: WeeklyPlanDay[] = [
   {
     focus: "Free Play Discipline",
     time: "35 min",
+    blockSlug: "ground-dribble",
     goals: [
       "Combine skills from the week in free play",
       "Stay intentional — pick a focus each 5 minutes",
@@ -66,6 +74,7 @@ const FREE_PLAN: WeeklyPlanDay[] = [
   {
     focus: "Review & Light Play",
     time: "20 min",
+    blockSlug: "rotation",
     goals: [
       "Replay one or two recent matches and note patterns",
       "Play casually and apply what you practiced",
@@ -77,6 +86,7 @@ const STARTER_PLAN: WeeklyPlanDay[] = [
   {
     focus: "Car Control",
     time: "30 min",
+    blockSlug: "fast-aerials",
     goals: [
       "Practice air roll and landing recovery",
       "Focus on smooth turning at speed",
@@ -86,6 +96,7 @@ const STARTER_PLAN: WeeklyPlanDay[] = [
   {
     focus: "Ball Control",
     time: "25 min",
+    blockSlug: "wall-play",
     goals: [
       "Dribble the ball on your car for extended periods",
       "Work on flicks from carry position",
@@ -95,6 +106,7 @@ const STARTER_PLAN: WeeklyPlanDay[] = [
   {
     focus: "Shooting",
     time: "35 min",
+    blockSlug: "key-mechanics",
     goals: [
       "Hit power shots from different angles",
       "Practice redirect shots off the wall",
@@ -104,6 +116,7 @@ const STARTER_PLAN: WeeklyPlanDay[] = [
   {
     focus: "Defense & Saves",
     time: "30 min",
+    blockSlug: "shadow-defense",
     goals: [
       "Shadow defend without overcommitting",
       "Practice backboard saves and clears",
@@ -113,6 +126,7 @@ const STARTER_PLAN: WeeklyPlanDay[] = [
   {
     focus: "Recoveries",
     time: "25 min",
+    blockSlug: "recovery",
     goals: [
       "Land on all four wheels after every aerial",
       "Chain wave dashes into play",
@@ -122,6 +136,7 @@ const STARTER_PLAN: WeeklyPlanDay[] = [
   {
     focus: "Free Play Discipline",
     time: "40 min",
+    blockSlug: "key-mechanics",
     goals: [
       "Combine skills from the week in free play",
       "Stay intentional — pick a focus each 5 minutes",
@@ -131,6 +146,7 @@ const STARTER_PLAN: WeeklyPlanDay[] = [
   {
     focus: "Review & Light Play",
     time: "25 min",
+    blockSlug: "self-review",
     goals: [
       "Replay one or two recent matches and note patterns",
       "Play casually and apply what you practiced",
@@ -143,6 +159,7 @@ const PRO_PLAN: WeeklyPlanDay[] = [
   {
     focus: "Car Control",
     time: "35 min",
+    blockSlug: "air-roll",
     goals: [
       "Air roll recovery into immediate boost-efficient play",
       "Smooth turning at speed with directional air roll",
@@ -152,6 +169,7 @@ const PRO_PLAN: WeeklyPlanDay[] = [
   {
     focus: "Ball Control",
     time: "30 min",
+    blockSlug: "ground-to-air",
     goals: [
       "Extended carries with sudden direction changes",
       "Flick variations: 45-degree, musty, breezi setups",
@@ -161,6 +179,7 @@ const PRO_PLAN: WeeklyPlanDay[] = [
   {
     focus: "Shooting",
     time: "40 min",
+    blockSlug: "rebounds",
     goals: [
       "Double-tap setups from backboard reads",
       "Power shots with placement under defensive pressure",
@@ -170,6 +189,7 @@ const PRO_PLAN: WeeklyPlanDay[] = [
   {
     focus: "Defense & Saves",
     time: "35 min",
+    blockSlug: "challenging",
     goals: [
       "Shadow defense with controlled challenges",
       "Backboard reads into immediate counter-attacks",
@@ -179,6 +199,7 @@ const PRO_PLAN: WeeklyPlanDay[] = [
   {
     focus: "Recoveries",
     time: "30 min",
+    blockSlug: "boost-positioning",
     goals: [
       "Wall-to-air recovery with directional air roll",
       "Chain wave dashes into immediate offensive pressure",
@@ -188,6 +209,7 @@ const PRO_PLAN: WeeklyPlanDay[] = [
   {
     focus: "Free Play Discipline",
     time: "45 min",
+    blockSlug: "training-routine",
     goals: [
       "Combine advanced mechanics in realistic scenarios",
       "Simulate 1v1 pressure: speed, reads, and adaptations",
@@ -197,6 +219,7 @@ const PRO_PLAN: WeeklyPlanDay[] = [
   {
     focus: "Review & Light Play",
     time: "30 min",
+    blockSlug: "1v1-analysis",
     goals: [
       "Replay analysis: decision-making in key moments",
       "Apply week's improvements in ranked play",

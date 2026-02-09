@@ -3,57 +3,63 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  isCompletedToday,
-  setCompletedToday,
+  getCompletedDates,
+  setCompletedDate,
+  getToday,
+  getWeekDates,
+  computeStreaks,
   onCompletionChange,
+  getSessionTags,
+  getSessionDurations,
+  getRankSnapshots,
+  getSavedPlaylist,
 } from "@/src/lib/training-completion";
+import type { FocusTag, RankSnapshot } from "@/src/lib/training-completion";
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
 export default function Dashboard() {
-  const [streak] = useState(3);
   const todayIndex = useMemo(() => (new Date().getDay() + 6) % 7, []);
+  const weekDates = useMemo(() => getWeekDates(0), []);
 
-  // Placeholder: Mon, Tue, Wed pre-completed
-  const [completedDays, setCompletedDays] = useState<Set<number>>(
-    () => new Set([0, 1, 2].filter((i) => i < todayIndex))
-  );
+  const [completedDays, setCompletedDays] = useState<Set<number>>(new Set());
+  const [streak, setStreak] = useState(0);
+  const [todayTags, setTodayTags] = useState<FocusTag[]>([]);
+  const [todayDuration, setTodayDuration] = useState<number | null>(null);
+  const [currentRank, setCurrentRank] = useState<RankSnapshot | null>(null);
 
-  const syncToday = useCallback(() => {
-    const done = isCompletedToday();
-    setCompletedDays((prev) => {
-      const has = prev.has(todayIndex);
-      if (done === has) return prev;
-      const next = new Set(prev);
-      if (done) next.add(todayIndex);
-      else next.delete(todayIndex);
-      return next;
+  const syncFromStorage = useCallback(() => {
+    const dates = getCompletedDates();
+    const daySet = new Set<number>();
+    weekDates.forEach((date, i) => {
+      if (dates.has(date)) daySet.add(i);
     });
-  }, [todayIndex]);
+    setCompletedDays(daySet);
+    setStreak(computeStreaks().current);
+  }, [weekDates]);
 
   useEffect(() => {
-    syncToday();
-    return onCompletionChange(syncToday);
-  }, [syncToday]);
+    syncFromStorage();
+    const today = getToday();
+    const tags = getSessionTags();
+    if (tags[today]) setTodayTags(tags[today]);
+    const durations = getSessionDurations();
+    if (durations[today]) setTodayDuration(durations[today]);
+    const playlist = getSavedPlaylist();
+    const snapshots = getRankSnapshots().filter((s) => s.playlist === playlist);
+    if (snapshots.length > 0) setCurrentRank(snapshots[snapshots.length - 1]);
+    return onCompletionChange(syncFromStorage);
+  }, [syncFromStorage]);
 
   const trainedToday = completedDays.has(todayIndex);
 
   const toggleDay = useCallback(
     (index: number) => {
-      setCompletedDays((prev) => {
-        const next = new Set(prev);
-        if (next.has(index)) {
-          next.delete(index);
-        } else {
-          next.add(index);
-        }
-        return next;
-      });
-      if (index === todayIndex) {
-        setCompletedToday(!completedDays.has(index));
-      }
+      const date = weekDates[index];
+      const wasCompleted = completedDays.has(index);
+      setCompletedDate(date, !wasCompleted);
     },
-    [todayIndex, completedDays]
+    [weekDates, completedDays]
   );
 
   return (
@@ -165,6 +171,95 @@ export default function Dashboard() {
 
         <div className="h-px w-full bg-neutral-800/60" />
 
+        {/* ── Today Summary ── */}
+        <section className="py-10">
+          <h2 className="mb-6 text-sm font-medium text-neutral-500">
+            Today Summary
+          </h2>
+          <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
+            <div className="flex flex-col gap-4">
+              {/* Focus tags */}
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-medium text-neutral-500">
+                    Focus
+                  </p>
+                  {todayTags.length > 0 ? (
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {todayTags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full border border-indigo-500/30 bg-indigo-600/10 px-2.5 py-0.5 text-[11px] font-medium text-indigo-300"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-1 text-xs text-neutral-600">
+                      No focus tags yet
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="h-px w-full bg-neutral-800/40" />
+
+              {/* Duration + Rank row */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-[11px] font-medium text-neutral-500">
+                    Duration
+                  </p>
+                  {todayDuration ? (
+                    <p className="mt-1 text-sm font-medium text-white">
+                      {todayDuration === 60 ? "60+" : todayDuration} min
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-xs text-neutral-600">
+                      Not logged yet
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-[11px] font-medium text-neutral-500">
+                    Rank ({currentRank?.playlist ?? "2v2"})
+                  </p>
+                  {currentRank ? (
+                    <p className="mt-1 text-sm font-medium text-white">
+                      {currentRank.rank}
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-xs text-neutral-600">
+                      Not set
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="h-px w-full bg-neutral-800/40" />
+
+              {/* Quick links */}
+              <div className="flex items-center gap-4">
+                <Link
+                  href="/training?plan=free"
+                  className="text-[11px] font-medium text-indigo-400 transition-colors hover:text-indigo-300"
+                >
+                  {trainedToday ? "Edit session" : "Start session"} &rarr;
+                </Link>
+                <Link
+                  href="/progress"
+                  className="text-[11px] font-medium text-neutral-500 transition-colors hover:text-neutral-300"
+                >
+                  Update rank &rarr;
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div className="h-px w-full bg-neutral-800/60" />
+
         <section className="py-10">
           <h2 className="mb-6 text-sm font-medium text-neutral-500">
             This Week
@@ -239,12 +334,51 @@ export default function Dashboard() {
               Click any day to toggle your training.
             </p>
             <Link
-              href="/training/plan"
+              href="/training/plan?plan=free"
               className="text-xs text-neutral-500 hover:text-neutral-300"
             >
               View Weekly Plan &rarr;
             </Link>
           </div>
+        </section>
+
+        <div className="h-px w-full bg-neutral-800/60" />
+
+        <section className="py-10">
+          <h2 className="mb-6 text-sm font-medium text-neutral-500">
+            Play Together
+          </h2>
+          <Link
+            href="/paywall"
+            className="flex items-center gap-4 rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5 transition-colors hover:border-neutral-700/60"
+          >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-600/15">
+              <svg
+                className="h-4 w-4 text-indigo-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z"
+                />
+              </svg>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-white">
+                Find a Duo / Trio
+              </p>
+              <p className="mt-0.5 text-xs text-neutral-500">
+                Team up with players who match your rank and goals.
+              </p>
+            </div>
+            <span className="shrink-0 rounded-full border border-neutral-800 bg-neutral-900 px-2 py-0.5 text-[10px] font-medium text-neutral-500">
+              Starter+
+            </span>
+          </Link>
         </section>
 
         <div className="h-px w-full bg-neutral-800/60" />
@@ -301,16 +435,22 @@ export default function Dashboard() {
         <section className="py-10">
           <div className="flex flex-col gap-3">
             <Link
-              href="/training"
+              href="/training?plan=free"
               className="flex h-11 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white hover:bg-indigo-500"
             >
               {trainedToday ? "Review Training" : "Go to Training"}
             </Link>
             <Link
-              href="/training/plan"
+              href="/training/plan?plan=free"
               className="flex h-11 items-center justify-center rounded-lg border border-neutral-800/60 text-sm font-medium text-neutral-400 hover:border-neutral-700 hover:text-neutral-300"
             >
               Weekly Plan
+            </Link>
+            <Link
+              href="/progress"
+              className="flex h-11 items-center justify-center rounded-lg border border-neutral-800/60 text-sm font-medium text-neutral-400 hover:border-neutral-700 hover:text-neutral-300"
+            >
+              View Progress
             </Link>
             {!trainedToday && (
               <button
