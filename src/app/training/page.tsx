@@ -23,6 +23,7 @@ import { getTodayPlan, getTodayIndex, DAY_LABELS, parsePlanTier } from "@/src/li
 import type { PlanTier } from "@/src/lib/weekly-plan";
 import { TRAINING_PROGRAMS, getBlocksBySection } from "@/src/lib/trainingPrograms";
 import type { TrainingBlock } from "@/src/lib/trainingPrograms";
+import PremiumPreview from "@/src/components/PremiumPreview";
 
 type Plan = "free" | "starter" | "pro";
 
@@ -229,91 +230,88 @@ function VideoBlock({
   );
 }
 
-const LOCKED_TIER_BENEFITS: Record<"starter" | "pro", string> = {
-  starter: "Structured drills and targeted practice to break through plateaus.",
-  pro: "Advanced mechanics, competitive game sense, and pro-level analysis.",
-};
-
 function LockedTierPreview({ tier }: { tier: "starter" | "pro" }) {
   const program = TRAINING_PROGRAMS[tier];
   const sections = getBlocksBySection(tier);
-  const benefit = LOCKED_TIER_BENEFITS[tier];
+  const sampleBlock = sections[0]?.blocks[0];
+  const remainingCount = program.blocks.length - 1;
 
   return (
-    <section className="py-8">
-      <div className="mb-5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h2 className="text-sm font-medium text-neutral-500">
-            {program.label} Program
-          </h2>
-          <span className="rounded-full border border-neutral-800 bg-neutral-900 px-2 py-0.5 text-[10px] font-medium text-neutral-500">
-            {program.blocks.length} blocks
-          </span>
-        </div>
-        <span className="flex items-center gap-1.5 text-[11px] text-neutral-600">
-          <svg
-            className="h-3 w-3"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"
-            />
-          </svg>
-          Locked
+    <PremiumPreview
+      title={`${program.label} Program`}
+      badge={
+        <span className="rounded-full border border-neutral-800 bg-neutral-900 px-2 py-0.5 text-[10px] font-medium text-neutral-500">
+          {program.blocks.length} blocks
         </span>
-      </div>
-
-      <div className="relative overflow-hidden rounded-xl border border-neutral-800/40 bg-[#0a0a0e]">
-        <div className="divide-y divide-neutral-800/30 opacity-50">
-          {sections.map(({ section, blocks }) => (
-            <div key={section} className="px-5 py-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-neutral-400">
-                  {section}
-                </span>
-                <span className="text-[10px] text-neutral-600">
-                  {blocks.length} {blocks.length === 1 ? "block" : "blocks"}
-                </span>
-              </div>
-              <div className="mt-2.5 flex flex-col gap-1.5">
-                {blocks.map((block) => (
-                  <div key={block.id} className="flex items-center gap-2">
-                    <div className="h-6 w-10 shrink-0 rounded bg-neutral-800/60" />
-                    <span className="text-xs text-neutral-600">
-                      {block.title}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
+      }
+      description={`Full program is part of ${program.label} so we can keep quality high and keep building new drills.`}
+      actions={
+        <div className="flex w-full flex-col items-center gap-3">
+          <Link
+            href={`/upgrade?plan=${tier}`}
+            className="flex h-9 w-full items-center justify-center rounded-lg bg-indigo-600 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
+          >
+            Unlock {program.label}
+          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/pricing"
+              className="text-xs text-neutral-500 transition-colors hover:text-neutral-300"
+            >
+              Compare plans
+            </Link>
+            <span className="text-neutral-800">&middot;</span>
+            <Link
+              href={`/plans/${tier}`}
+              className="text-xs text-neutral-500 transition-colors hover:text-neutral-300"
+            >
+              See what&apos;s included
+            </Link>
+          </div>
+          {remainingCount > 0 && (
+            <p className="text-[11px] text-neutral-700">
+              +{remainingCount} more {remainingCount === 1 ? "block" : "blocks"}
+            </p>
+          )}
         </div>
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[#0a0a0e] to-transparent" />
-      </div>
+      }
+    >
+      {/* Sample block — fully visible */}
+      {sampleBlock && (
+        <>
+          <h3 className="text-sm font-semibold text-white">
+            {sampleBlock.title}
+          </h3>
+          {sampleBlock.goals[0] && (
+            <p className="mt-2 flex items-start gap-2 text-xs leading-relaxed text-neutral-500">
+              <span className="mt-1.5 block h-1 w-1 shrink-0 rounded-full bg-indigo-500/40" />
+              {sampleBlock.goals[0]}
+            </p>
+          )}
+          <div className="mt-3 flex h-10 items-center justify-center rounded-lg bg-neutral-800/40">
+            <span className="text-[11px] text-neutral-600">
+              Video available with {program.label}
+            </span>
+          </div>
+        </>
+      )}
 
-      <div className="mt-4 flex flex-col items-center gap-3">
-        <p className="text-center text-xs leading-relaxed text-neutral-500">
-          {benefit}
-        </p>
-        <Link
-          href={`/upgrade?plan=${tier}`}
-          className="flex h-9 w-full items-center justify-center rounded-lg bg-indigo-600 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
-        >
-          Unlock {program.label}
-        </Link>
-        <Link
-          href={`/plans/${tier}`}
-          className="text-xs text-neutral-500 transition-colors hover:text-neutral-300"
-        >
-          See {program.label} details &rarr;
-        </Link>
+      {/* Remaining blocks — muted */}
+      <div className="mt-4 rounded-xl border border-neutral-800/40 bg-[#0a0a0e] opacity-40">
+        <div className="flex flex-col gap-2 p-4">
+          {sections.map(({ section, blocks }) =>
+            blocks.slice(section === sections[0].section ? 1 : 0).map((block) => (
+              <div key={block.id} className="flex items-center gap-2.5">
+                <div className="h-5 w-8 shrink-0 rounded bg-neutral-800/60" />
+                <span className="text-xs text-neutral-600">
+                  {block.title}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
       </div>
-    </section>
+    </PremiumPreview>
   );
 }
 

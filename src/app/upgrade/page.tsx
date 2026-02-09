@@ -1,4 +1,5 @@
 import Link from "next/link";
+import NotifyForm from "@/src/components/NotifyForm";
 
 const plans = {
   starter: {
@@ -116,10 +117,8 @@ export default async function UpgradePage({
           </ul>
         </div>
 
-        <div className="mt-6 rounded-xl border border-indigo-500/10 bg-indigo-500/[0.04] p-5 text-center">
-          <p className="text-sm leading-relaxed text-indigo-300/80">
-            Payments are coming soon. For now this is a preview.
-          </p>
+        <div className="mt-6">
+          <NotifyForm plan={planKey} />
         </div>
 
         <div className="mt-6 flex flex-col gap-3">

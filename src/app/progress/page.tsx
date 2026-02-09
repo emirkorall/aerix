@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { parsePlanTier } from "@/src/lib/weekly-plan";
+import PremiumPreview from "@/src/components/PremiumPreview";
 import {
   getCompletedDates,
   getToday,
@@ -589,68 +590,59 @@ function ProgressContent() {
         <div className="h-px w-full bg-neutral-800/60" />
 
         {/* ── Insights ── */}
-        <section className="py-10">
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-sm font-medium text-neutral-500">Insights</h2>
-            {plan !== "free" && (
-              <span className="rounded-full bg-indigo-600/20 px-2.5 py-0.5 text-[10px] font-medium text-indigo-400">
-                {plan === "pro" ? "Pro" : "Starter"}
-              </span>
-            )}
-          </div>
-          {plan === "free" ? (
-            <div className="relative overflow-hidden rounded-xl border border-neutral-800/60 bg-[#0c0c10]">
-              <div className="pointer-events-none select-none p-5 opacity-40 blur-[2px]">
-                <ul className="flex flex-col gap-3">
-                  <li className="flex items-start gap-2.5">
-                    <span className="mt-1 block h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500/50" />
-                    <span className="text-sm text-neutral-300">
-                      Your best training day is <strong>Wednesday</strong> — you
-                      show up most consistently midweek.
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <span className="mt-1 block h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500/50" />
-                    <span className="text-sm text-neutral-300">
-                      Top focus: <strong>Aerials</strong> — you&apos;ve tagged
-                      it 4 times this week.
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <span className="mt-1 block h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500/50" />
-                    <span className="text-sm text-neutral-300">
-                      Your consistency pattern suggests you train in bursts —
-                      try spacing sessions evenly.
-                    </span>
-                  </li>
-                </ul>
-              </div>
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0c0c10]/60">
-                <svg
-                  className="mb-2 h-5 w-5 text-neutral-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"
-                  />
-                </svg>
-                <p className="text-xs font-medium text-neutral-400">
-                  Personalized insights for Starter+
-                </p>
+        {plan === "free" ? (
+          <PremiumPreview
+            title="Insights"
+            description="Starter unlocks insights that connect your focus + time + consistency."
+            actions={
+              <>
                 <Link
                   href="/upgrade?plan=starter"
-                  className="mt-3 flex h-8 items-center justify-center rounded-lg bg-indigo-600 px-4 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
+                  className="flex h-8 items-center justify-center rounded-lg bg-indigo-600 px-4 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
                 >
                   Unlock Insights
                 </Link>
+                <Link
+                  href="/pricing"
+                  className="text-xs text-neutral-500 transition-colors hover:text-neutral-300"
+                >
+                  Compare plans
+                </Link>
+              </>
+            }
+          >
+            {/* Real stat */}
+            <div className="flex items-start gap-2.5">
+              <span className="mt-1 block h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500" />
+              <span className="text-sm leading-relaxed text-neutral-300">
+                This week: <strong className="text-white">{thisWeekCount}/7</strong> sessions completed.
+              </span>
+            </div>
+
+            {/* Muted example insights */}
+            <div className="mt-4 flex flex-col gap-2.5 opacity-40">
+              <div className="flex items-start gap-2.5">
+                <span className="mt-1 block h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500/50" />
+                <span className="text-sm text-neutral-400">
+                  Your top focus area and how it connects to your rank trend.
+                </span>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <span className="mt-1 block h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500/50" />
+                <span className="text-sm text-neutral-400">
+                  Personalized coaching based on your consistency pattern.
+                </span>
               </div>
             </div>
-          ) : (
+          </PremiumPreview>
+        ) : (
+          <section className="py-10">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-sm font-medium text-neutral-500">Insights</h2>
+              <span className="rounded-full bg-indigo-600/20 px-2.5 py-0.5 text-[10px] font-medium text-indigo-400">
+                {plan === "pro" ? "Pro" : "Starter"}
+              </span>
+            </div>
             <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
               <ul className="flex flex-col gap-3">
                 {/* Top focus tag */}
@@ -729,8 +721,8 @@ function ProgressContent() {
                 })()}
               </ul>
             </div>
-          )}
-        </section>
+          </section>
+        )}
 
         <div className="h-px w-full bg-neutral-800/60" />
 
