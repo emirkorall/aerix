@@ -17,8 +17,9 @@ import {
   getSessionDurations,
   saveSessionDuration,
   DURATION_OPTIONS,
+  getOnboarding,
 } from "@/src/lib/training-completion";
-import type { SessionNote, FocusTag } from "@/src/lib/training-completion";
+import type { SessionNote, FocusTag, OnboardingData } from "@/src/lib/training-completion";
 import { getTodayPlan, getTodayIndex, DAY_LABELS, parsePlanTier } from "@/src/lib/weekly-plan";
 import type { PlanTier } from "@/src/lib/weekly-plan";
 import { TRAINING_PROGRAMS, getBlocksBySection } from "@/src/lib/trainingPrograms";
@@ -333,6 +334,7 @@ function TrainingContent() {
   const [selectedTags, setSelectedTags] = useState<FocusTag[]>([]);
   const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
   const [activeSlug, setActiveSlug] = useState("");
+  const [onboarding, setOnboarding] = useState<OnboardingData | null>(null);
 
   useEffect(() => {
     const hash = window.location.hash.slice(1);
@@ -363,6 +365,7 @@ function TrainingContent() {
     if (durations[today]) {
       setSelectedDuration(durations[today]);
     }
+    setOnboarding(getOnboarding());
     return onCompletionChange(() => {
       setCompleted(isCompletedToday());
       setHistoryDates(getCompletedDates());
@@ -441,6 +444,20 @@ function TrainingContent() {
         <div className="h-px w-full bg-neutral-800/60" />
 
         <TodaysPlan plan={plan} onJumpToDrill={setActiveSlug} />
+
+        {onboarding && (
+          <div className="pb-6">
+            <p className="text-xs leading-relaxed text-neutral-500">
+              {onboarding.goal === "Rank Up"
+                ? "Small sessions daily beat big sessions sometimes."
+                : onboarding.goal === "Build Consistency"
+                  ? "Just show up \u2014 the streak does the heavy lifting."
+                  : onboarding.goal === "Mechanics"
+                    ? "Focus on clean reps, not flashy clips."
+                    : "Play slower in your head, faster in your decisions."}
+            </p>
+          </div>
+        )}
 
         {!completed ? (
           <>

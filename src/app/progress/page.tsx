@@ -18,6 +18,7 @@ import {
   getSavedPlaylist,
   setSavedPlaylist,
   getRankIndex,
+  getOnboarding,
   PLAYLISTS,
   RANKS,
 } from "@/src/lib/training-completion";
@@ -25,6 +26,7 @@ import type {
   SessionNote,
   FocusTag,
   RankSnapshot,
+  OnboardingData,
   Playlist,
   Rank,
 } from "@/src/lib/training-completion";
@@ -57,6 +59,7 @@ function ProgressContent() {
   const [showRankForm, setShowRankForm] = useState(false);
   const [formPlaylist, setFormPlaylist] = useState<Playlist>("2v2");
   const [formRank, setFormRank] = useState<Rank>("Gold I");
+  const [onboarding, setOnboarding] = useState<OnboardingData | null>(null);
 
   useEffect(() => {
     setCompletedDates(getCompletedDates());
@@ -68,6 +71,7 @@ function ProgressContent() {
     const pl = getSavedPlaylist();
     setRankPlaylist(pl);
     setFormPlaylist(pl);
+    setOnboarding(getOnboarding());
   }, []);
 
   const thisWeekDates = getWeekDates(0);
@@ -788,6 +792,17 @@ function ProgressContent() {
           <h2 className="mb-6 text-sm font-medium text-neutral-500">
             Next Action
           </h2>
+          {onboarding && (
+            <p className="mb-4 text-xs leading-relaxed text-neutral-500">
+              {onboarding.goal === "Rank Up"
+                ? "Small sessions daily beat big sessions sometimes."
+                : onboarding.goal === "Build Consistency"
+                  ? "Just show up \u2014 the streak does the heavy lifting."
+                  : onboarding.goal === "Mechanics"
+                    ? "Focus on clean reps, not flashy clips."
+                    : "Play slower in your head, faster in your decisions."}
+            </p>
+          )}
           <div className="flex flex-col gap-3">
             {trainedToday ? (
               <Link

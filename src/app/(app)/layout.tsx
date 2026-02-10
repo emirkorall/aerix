@@ -48,6 +48,12 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 </Link>
               );
             })}
+            <Link
+              href="/pricing"
+              className="ml-1 rounded-md px-3 py-2 text-sm font-medium text-indigo-400/80 transition-colors hover:bg-white/5 hover:text-indigo-300"
+            >
+              Upgrade
+            </Link>
           </nav>
         </div>
       </header>

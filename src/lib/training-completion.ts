@@ -288,6 +288,30 @@ export function getRankIndex(rank: Rank): number {
   return RANKS.indexOf(rank);
 }
 
+const ONBOARDING_KEY = "aerix.onboarding";
+
+export const GOALS = ["Rank Up", "Build Consistency", "Mechanics", "Game Sense"] as const;
+export type Goal = (typeof GOALS)[number];
+
+export interface OnboardingData {
+  goal: Goal;
+  playlist: Playlist;
+}
+
+export function getOnboarding(): OnboardingData | null {
+  try {
+    const raw = localStorage.getItem(ONBOARDING_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export function saveOnboarding(data: OnboardingData): void {
+  localStorage.setItem(ONBOARDING_KEY, JSON.stringify(data));
+}
+
 export function onCompletionChange(callback: () => void): () => void {
   const handleStorage = (e: StorageEvent) => {
     if (e.key === STORAGE_KEY) callback();

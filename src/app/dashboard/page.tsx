@@ -13,8 +13,12 @@ import {
   getSessionDurations,
   getRankSnapshots,
   getSavedPlaylist,
+  getOnboarding,
+  saveOnboarding,
+  GOALS,
+  PLAYLISTS,
 } from "@/src/lib/training-completion";
-import type { FocusTag, RankSnapshot } from "@/src/lib/training-completion";
+import type { FocusTag, RankSnapshot, OnboardingData, Goal, Playlist } from "@/src/lib/training-completion";
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
@@ -27,6 +31,10 @@ export default function Dashboard() {
   const [todayTags, setTodayTags] = useState<FocusTag[]>([]);
   const [todayDuration, setTodayDuration] = useState<number | null>(null);
   const [currentRank, setCurrentRank] = useState<RankSnapshot | null>(null);
+  const [onboarding, setOnboarding] = useState<OnboardingData | null | undefined>(undefined);
+  const [obGoal, setObGoal] = useState<Goal>("Rank Up");
+  const [obPlaylist, setObPlaylist] = useState<Playlist>("2v2");
+  const [obJustSaved, setObJustSaved] = useState(false);
 
   const syncFromStorage = useCallback(() => {
     const dates = getCompletedDates();
@@ -48,6 +56,7 @@ export default function Dashboard() {
     const playlist = getSavedPlaylist();
     const snapshots = getRankSnapshots().filter((s) => s.playlist === playlist);
     if (snapshots.length > 0) setCurrentRank(snapshots[snapshots.length - 1]);
+    setOnboarding(getOnboarding());
     return onCompletionChange(syncFromStorage);
   }, [syncFromStorage]);
 
@@ -72,12 +81,26 @@ export default function Dashboard() {
           >
             Aerix
           </Link>
-          <Link
-            href="/pricing"
-            className="text-sm text-neutral-400 transition-colors hover:text-white"
-          >
-            Plans
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/feedback"
+              className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
+            >
+              Feedback
+            </Link>
+            <Link
+              href="/settings"
+              className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
+            >
+              Settings
+            </Link>
+            <Link
+              href="/pricing"
+              className="text-sm text-neutral-400 transition-colors hover:text-white"
+            >
+              Plans
+            </Link>
+          </div>
         </nav>
 
         <section className="pt-20 pb-10">
@@ -91,7 +114,94 @@ export default function Dashboard() {
             Here&apos;s where you are. Keep showing up — that&apos;s all it
             takes.
           </p>
+          {onboarding && !obJustSaved && (
+            <p className="mt-3 text-xs text-neutral-500">
+              Goal: <span className="text-neutral-400">{onboarding.goal}</span>
+              {" "}&middot;{" "}
+              Playlist: <span className="text-neutral-400">{onboarding.playlist}</span>
+            </p>
+          )}
         </section>
+
+        {/* ── Onboarding ── */}
+        {onboarding === null && (
+          <section className="pb-10">
+            <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/[0.03] p-6">
+              <h2 className="text-sm font-semibold text-white">
+                Let&apos;s set up your training.
+              </h2>
+              <p className="mt-1 text-xs leading-relaxed text-neutral-500">
+                Two quick picks so AERIX can guide you better.
+              </p>
+
+              <div className="mt-5">
+                <p className="mb-2 text-[11px] font-medium text-neutral-400">
+                  What&apos;s your main goal?
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {GOALS.map((g) => (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => setObGoal(g)}
+                      className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                        obGoal === g
+                          ? "border-indigo-500/40 bg-indigo-600/20 text-indigo-300"
+                          : "border-neutral-800/60 bg-[#0c0c10] text-neutral-500 hover:border-neutral-700 hover:text-neutral-400"
+                      }`}
+                    >
+                      {g}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-5">
+                <p className="mb-2 text-[11px] font-medium text-neutral-400">
+                  Main playlist?
+                </p>
+                <div className="flex gap-2">
+                  {PLAYLISTS.map((pl) => (
+                    <button
+                      key={pl}
+                      type="button"
+                      onClick={() => setObPlaylist(pl)}
+                      className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors ${
+                        obPlaylist === pl
+                          ? "border-indigo-500/40 bg-indigo-600/20 text-indigo-300"
+                          : "border-neutral-800/60 bg-[#0c0c10] text-neutral-500 hover:border-neutral-700 hover:text-neutral-400"
+                      }`}
+                    >
+                      {pl}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  const data: OnboardingData = { goal: obGoal, playlist: obPlaylist };
+                  saveOnboarding(data);
+                  setOnboarding(data);
+                  setObJustSaved(true);
+                }}
+                className="mt-6 flex h-10 w-full items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+              >
+                Save &amp; Start
+              </button>
+            </div>
+          </section>
+        )}
+
+        {obJustSaved && (
+          <section className="pb-10">
+            <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/[0.03] p-5 text-center">
+              <p className="text-sm font-medium text-indigo-300">
+                Saved. Let&apos;s get a clean week in.
+              </p>
+            </div>
+          </section>
+        )}
 
         <div className="h-px w-full bg-neutral-800/60" />
 
@@ -470,7 +580,7 @@ export default function Dashboard() {
             href="/"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            ← Back to home
+            &larr; Back to home
           </Link>
         </footer>
       </div>
