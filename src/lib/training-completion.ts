@@ -98,6 +98,13 @@ export function setCompletedDate(date: string, completed: boolean): void {
   const history = new Set(Object.keys(map));
   localStorage.setItem(HISTORY_KEY, JSON.stringify([...history]));
 
+  // Sync to Supabase (non-blocking)
+  if (completed) {
+    import("@/src/lib/supabase/sync-completions")
+      .then(({ upsertCompletionDay }) => upsertCompletionDay(date))
+      .catch(() => {});
+  }
+
   window.dispatchEvent(new Event(CUSTOM_EVENT));
 }
 

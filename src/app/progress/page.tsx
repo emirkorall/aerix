@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { parsePlanTier } from "@/src/lib/weekly-plan";
+import { syncRankSnapshots, upsertRankSnapshot } from "@/src/lib/supabase/sync-rank-snapshots";
 import PremiumPreview from "@/src/components/PremiumPreview";
+import { fetchUserPlan } from "@/src/lib/user-plan";
 import {
   getCompletedDates,
   getToday,
@@ -48,7 +50,8 @@ export default function ProgressPage() {
 
 function ProgressContent() {
   const searchParams = useSearchParams();
-  const plan = parsePlanTier(searchParams.get("plan"));
+  const urlPlan = parsePlanTier(searchParams.get("plan"));
+  const [plan, setPlan] = useState(urlPlan);
   const [completedDates, setCompletedDates] = useState<Set<string>>(new Set());
   const [allNotes, setAllNotes] = useState<Record<string, SessionNote>>({});
   const [allTags, setAllTags] = useState<Record<string, FocusTag[]>>({});
@@ -72,6 +75,14 @@ function ProgressContent() {
     setRankPlaylist(pl);
     setFormPlaylist(pl);
     setOnboarding(getOnboarding());
+
+    // Background sync rank snapshots with Supabase
+    syncRankSnapshots().then(() => {
+      setRankSnapshots(getRankSnapshots());
+    });
+
+    // Fetch real plan from DB for signed-in users
+    fetchUserPlan().then(setPlan);
   }, []);
 
   const thisWeekDates = getWeekDates(0);
@@ -160,21 +171,13 @@ function ProgressContent() {
           <p className="mt-4 text-base leading-relaxed text-neutral-400">
             Consistency compounds. Here&apos;s proof you&apos;re showing up.
           </p>
-          <div className="mt-5 flex gap-1">
-            {(["free", "starter", "pro"] as const).map((p) => (
-              <Link
-                key={p}
-                href={`/progress?plan=${p}`}
-                className={`rounded-full px-3 py-1 text-[11px] font-medium capitalize transition-colors ${
-                  plan === p
-                    ? "bg-indigo-600/20 text-indigo-300"
-                    : "text-neutral-600 hover:text-neutral-400"
-                }`}
-              >
-                {p}
-              </Link>
-            ))}
-          </div>
+          {plan !== "free" && (
+            <div className="mt-5">
+              <span className="rounded-full bg-indigo-600/20 px-2.5 py-0.5 text-[10px] font-medium text-indigo-400 capitalize">
+                {plan}
+              </span>
+            </div>
+          )}
         </section>
 
         <div className="h-px w-full bg-neutral-800/60" />
@@ -494,6 +497,7 @@ function ProgressContent() {
                           rank: formRank,
                         };
                         saveRankSnapshot(snapshot);
+                        upsertRankSnapshot(snapshot);
                         setRankSnapshots((prev) => [...prev, snapshot]);
                         setRankPlaylist(formPlaylist);
                         setSavedPlaylist(formPlaylist);
@@ -806,14 +810,14 @@ function ProgressContent() {
           <div className="flex flex-col gap-3">
             {trainedToday ? (
               <Link
-                href="/training/plan?plan=free"
+                href={`/training/plan?plan=${plan}`}
                 className="flex h-11 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
               >
                 View Weekly Plan
               </Link>
             ) : (
               <Link
-                href="/training?plan=free"
+                href={`/training?plan=${plan}`}
                 className="flex h-11 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
               >
                 Train Today

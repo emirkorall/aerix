@@ -2,6 +2,13 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/src/lib/supabase/client";
+import { isSupabaseConfigured } from "@/src/lib/supabase/validate";
+import { syncCompletions } from "@/src/lib/supabase/sync-completions";
+import SupabaseNotConfigured from "@/src/components/SupabaseNotConfigured";
+import { fetchUserPlan } from "@/src/lib/user-plan";
+import type { PlanTier } from "@/src/lib/weekly-plan";
 import {
   getCompletedDates,
   setCompletedDate,
@@ -35,6 +42,28 @@ export default function Dashboard() {
   const [obGoal, setObGoal] = useState<Goal>("Rank Up");
   const [obPlaylist, setObPlaylist] = useState<Playlist>("2v2");
   const [obJustSaved, setObJustSaved] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userPlan, setUserPlan] = useState<PlanTier>("free");
+  const [configError, setConfigError] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    try {
+      const supabase = createClient();
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        setUserEmail(user?.email ?? null);
+        setUserId(user?.id ?? null);
+        if (user) {
+          syncCompletions().then(syncFromStorage);
+          fetchUserPlan().then(setUserPlan);
+        }
+      });
+    } catch {
+      setConfigError(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const syncFromStorage = useCallback(() => {
     const dates = getCompletedDates();
@@ -61,6 +90,11 @@ export default function Dashboard() {
   }, [syncFromStorage]);
 
   const trainedToday = completedDays.has(todayIndex);
+  const supabaseReady = isSupabaseConfigured();
+
+  if (configError || !supabaseReady) {
+    return <SupabaseNotConfigured />;
+  }
 
   const toggleDay = useCallback(
     (index: number) => {
@@ -100,6 +134,16 @@ export default function Dashboard() {
             >
               Plans
             </Link>
+            <button
+              onClick={async () => {
+                const supabase = createClient();
+                await supabase.auth.signOut();
+                router.push("/");
+              }}
+              className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
+            >
+              Sign out
+            </button>
           </div>
         </nav>
 
@@ -352,7 +396,7 @@ export default function Dashboard() {
               {/* Quick links */}
               <div className="flex items-center gap-4">
                 <Link
-                  href="/training?plan=free"
+                  href={`/training?plan=${userPlan}`}
                   className="text-[11px] font-medium text-indigo-400 transition-colors hover:text-indigo-300"
                 >
                   {trainedToday ? "Edit session" : "Start session"} &rarr;
@@ -444,7 +488,7 @@ export default function Dashboard() {
               Click any day to toggle your training.
             </p>
             <Link
-              href="/training/plan?plan=free"
+              href={`/training/plan?plan=${userPlan}`}
               className="text-xs text-neutral-500 hover:text-neutral-300"
             >
               View Weekly Plan &rarr;
@@ -545,13 +589,13 @@ export default function Dashboard() {
         <section className="py-10">
           <div className="flex flex-col gap-3">
             <Link
-              href="/training?plan=free"
+              href={`/training?plan=${userPlan}`}
               className="flex h-11 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white hover:bg-indigo-500"
             >
               {trainedToday ? "Review Training" : "Go to Training"}
             </Link>
             <Link
-              href="/training/plan?plan=free"
+              href={`/training/plan?plan=${userPlan}`}
               className="flex h-11 items-center justify-center rounded-lg border border-neutral-800/60 text-sm font-medium text-neutral-400 hover:border-neutral-700 hover:text-neutral-300"
             >
               Weekly Plan
@@ -570,6 +614,53 @@ export default function Dashboard() {
                 Mark today as done
               </button>
             )}
+          </div>
+        </section>
+
+        <div className="h-px w-full bg-neutral-800/60" />
+
+        {/* ── Account ── */}
+        <section className="py-10">
+          <h2 className="mb-6 text-sm font-medium text-neutral-500">
+            Account
+          </h2>
+          <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
+            <div className="flex flex-col gap-3">
+              <div>
+                <p className="text-[11px] font-medium text-neutral-500">Plan</p>
+                <div className="mt-1 flex items-center gap-2">
+                  <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium capitalize ${
+                    userPlan === "pro"
+                      ? "bg-indigo-600/20 text-indigo-300"
+                      : userPlan === "starter"
+                        ? "bg-indigo-600/15 text-indigo-400"
+                        : "bg-neutral-800 text-neutral-400"
+                  }`}>
+                    {userPlan}
+                  </span>
+                  {userPlan === "free" && (
+                    <Link
+                      href="/pricing"
+                      className="text-[11px] text-indigo-400 transition-colors hover:text-indigo-300"
+                    >
+                      Upgrade
+                    </Link>
+                  )}
+                </div>
+              </div>
+              <div>
+                <p className="text-[11px] font-medium text-neutral-500">Email</p>
+                <p className="mt-0.5 text-sm text-white">
+                  {userEmail ?? "—"}
+                </p>
+              </div>
+              <div>
+                <p className="text-[11px] font-medium text-neutral-500">User ID</p>
+                <p className="mt-0.5 font-mono text-sm text-neutral-400">
+                  {userId ? `${userId.slice(0, 8)}…` : "—"}
+                </p>
+              </div>
+            </div>
           </div>
         </section>
 

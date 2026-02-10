@@ -1,54 +1,93 @@
+"use client";
+
 import Link from "next/link";
-import NotifyForm from "@/src/components/NotifyForm";
+import { useSearchParams, useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
 
 const plans = {
   starter: {
     name: "Starter",
     price: "5.99",
-    symbol: "€",
+    symbol: "\u20ac",
     period: "/month",
-    description: "Train & play with others",
-    detail:
-      "Starter is for players who want to go beyond solo training. Unlock duo and trio matchmaking, keep your streak protected, and start playing with people who actually want to improve.",
+    description: "Train smarter, track everything",
     features: [
       "Daily training tracking",
       "Full training history",
-      "Duo / Trio finder",
-      "1 streak save per month",
+      "6 training blocks with videos",
+      "Focus tags & session duration tracking",
+      "Personalized weekly insights",
     ],
   },
   pro: {
     name: "Pro",
     price: "11.99",
-    symbol: "€",
+    symbol: "\u20ac",
     period: "/month",
     description: "For competitive grinders",
-    detail:
-      "Pro is built for players who take ranking up seriously. Get priority matchmaking, extended streak protection, and weekly summaries to track exactly where you're improving.",
     features: [
       "Everything in Starter",
-      "Priority in Duo / Trio finder",
-      "3 streak saves per month",
-      "Weekly & monthly summaries",
+      "9 advanced training blocks",
+      "Rank trend insights",
+      "Deeper weekly summaries",
+      "Duo / Trio finder (coming soon)",
     ],
   },
 } as const;
 
 type PlanKey = keyof typeof plans;
 
-function parsePlan(value: string | undefined): PlanKey {
+function parsePlan(value: string | null): PlanKey {
   if (value === "pro") return "pro";
   return "starter";
 }
 
-export default async function UpgradePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}) {
-  const params = await searchParams;
-  const planKey = parsePlan(typeof params.plan === "string" ? params.plan : undefined);
+export default function UpgradePage() {
+  return (
+    <Suspense>
+      <UpgradeContent />
+    </Suspense>
+  );
+}
+
+function UpgradeContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const planKey = parsePlan(searchParams.get("plan"));
   const plan = plans[planKey];
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleCheckout() {
+    setError("");
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: planKey }),
+      });
+
+      if (res.status === 401) {
+        router.push(`/login?returnTo=/upgrade?plan=${planKey}`);
+        return;
+      }
+
+      const data = await res.json();
+
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setError(data.error || "Something went wrong.");
+        setLoading(false);
+      }
+    } catch {
+      setError("Network error. Please try again.");
+      setLoading(false);
+    }
+  }
 
   return (
     <main className="min-h-screen bg-[#060608] text-white">
@@ -64,7 +103,7 @@ export default async function UpgradePage({
             href="/pricing"
             className="text-sm text-neutral-500 hover:text-neutral-300"
           >
-            ← Back to pricing
+            &larr; Back to pricing
           </Link>
         </nav>
 
@@ -91,13 +130,12 @@ export default async function UpgradePage({
             </p>
           </div>
 
-          <p className="mt-5 text-sm leading-relaxed text-neutral-400">
-            {plan.detail}
-          </p>
-
-          <ul className="mt-5 flex flex-col gap-2.5 border-t border-neutral-800/60 pt-5">
+          <ul className="mt-5 flex flex-col gap-2.5">
             {plan.features.map((feature) => (
-              <li key={feature} className="flex items-center gap-2.5 text-sm text-neutral-400">
+              <li
+                key={feature}
+                className="flex items-center gap-2.5 text-sm text-neutral-400"
+              >
                 <svg
                   className="h-4 w-4 shrink-0 text-indigo-400"
                   fill="none"
@@ -117,28 +155,22 @@ export default async function UpgradePage({
           </ul>
         </div>
 
-        <div className="mt-6">
-          <NotifyForm plan={planKey} />
-        </div>
-
         <div className="mt-6 flex flex-col gap-3">
+          <button
+            onClick={handleCheckout}
+            disabled={loading}
+            className="flex h-11 w-full items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:opacity-50"
+          >
+            {loading ? "Redirecting..." : "Continue to Checkout"}
+          </button>
+          {error && (
+            <p className="text-center text-xs text-red-400">{error}</p>
+          )}
           <Link
             href="/pricing"
-            className="flex h-11 w-full items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
-          >
-            View Pricing
-          </Link>
-          <Link
-            href="/training"
             className="flex h-11 w-full items-center justify-center rounded-lg border border-neutral-800/60 text-sm font-medium text-neutral-400 transition-colors hover:border-neutral-700 hover:text-neutral-300"
           >
-            Back to Training
-          </Link>
-          <Link
-            href={`/plans/${planKey}`}
-            className="mt-1 text-center text-xs text-neutral-500 transition-colors hover:text-neutral-300"
-          >
-            See {plan.name} plan details &rarr;
+            Compare Plans
           </Link>
         </div>
 

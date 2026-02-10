@@ -25,6 +25,7 @@ import type { PlanTier } from "@/src/lib/weekly-plan";
 import { TRAINING_PROGRAMS, getBlocksBySection } from "@/src/lib/trainingPrograms";
 import type { TrainingBlock } from "@/src/lib/trainingPrograms";
 import PremiumPreview from "@/src/components/PremiumPreview";
+import { fetchUserPlan } from "@/src/lib/user-plan";
 
 type Plan = "free" | "starter" | "pro";
 
@@ -318,7 +319,12 @@ function LockedTierPreview({ tier }: { tier: "starter" | "pro" }) {
 
 function TrainingContent() {
   const searchParams = useSearchParams();
-  const plan: Plan = parsePlanTier(searchParams.get("plan")) as Plan;
+  const urlPlan = parsePlanTier(searchParams.get("plan")) as Plan;
+  const [plan, setPlan] = useState<Plan>(urlPlan);
+
+  useEffect(() => {
+    fetchUserPlan().then((dbPlan) => setPlan(dbPlan as Plan));
+  }, []);
 
   const program = TRAINING_PROGRAMS[plan];
   const sections = getBlocksBySection(plan);
