@@ -1,9 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { parsePlanTier } from "@/src/lib/weekly-plan";
 import { syncRankSnapshots, upsertRankSnapshot } from "@/src/lib/supabase/sync-rank-snapshots";
 import PremiumPreview from "@/src/components/PremiumPreview";
 import { fetchUserPlan } from "@/src/lib/user-plan";
@@ -49,9 +47,7 @@ export default function ProgressPage() {
 }
 
 function ProgressContent() {
-  const searchParams = useSearchParams();
-  const urlPlan = parsePlanTier(searchParams.get("plan"));
-  const [plan, setPlan] = useState(urlPlan);
+  const [plan, setPlan] = useState<"free" | "starter" | "pro">("free");
   const [completedDates, setCompletedDates] = useState<Set<string>>(new Set());
   const [allNotes, setAllNotes] = useState<Record<string, SessionNote>>({});
   const [allTags, setAllTags] = useState<Record<string, FocusTag[]>>({});

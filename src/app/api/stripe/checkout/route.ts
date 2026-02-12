@@ -20,12 +20,42 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
+    // Find existing Stripe customer or create one
+    let customerId: string | undefined;
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("stripe_customer_id")
+      .eq("id", user.id)
+      .single();
+
+    if (profile?.stripe_customer_id) {
+      customerId = profile.stripe_customer_id;
+    } else {
+      const customer = await stripe.customers.create({
+        email: user.email ?? undefined,
+        metadata: { user_id: user.id },
+      });
+      customerId = customer.id;
+
+      // Store stripe_customer_id in profiles
+      const { error: upsertErr } = await supabase
+        .from("profiles")
+        .update({ stripe_customer_id: customerId })
+        .eq("id", user.id);
+
+      if (upsertErr) {
+        console.warn("[stripe] failed to store stripe_customer_id:", upsertErr.message);
+      } else {
+        console.log(`[stripe] stored stripe_customer_id=${customerId} for user=${user.id}`);
+      }
+    }
+
     const origin = request.headers.get("origin") ?? "http://localhost:3000";
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
+      customer: customerId,
       line_items: [{ price: priceId, quantity: 1 }],
-      customer_email: user.email ?? undefined,
       metadata: { user_id: user.id, plan },
       success_url: `${origin}/upgrade/success`,
       cancel_url: `${origin}/pricing`,

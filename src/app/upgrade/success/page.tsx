@@ -48,7 +48,7 @@ export default function UpgradeSuccess() {
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-600 border-t-indigo-400" />
               </div>
               <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-                Checking your plan&hellip;
+                Activating your plan&hellip;
               </h1>
               <p className="mt-3 max-w-sm text-sm leading-relaxed text-neutral-400">
                 This usually takes a few seconds.

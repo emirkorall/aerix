@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   isCompletedToday,
@@ -20,7 +19,7 @@ import {
   getOnboarding,
 } from "@/src/lib/training-completion";
 import type { SessionNote, FocusTag, OnboardingData } from "@/src/lib/training-completion";
-import { getTodayPlan, getTodayIndex, DAY_LABELS, parsePlanTier } from "@/src/lib/weekly-plan";
+import { getTodayPlan, getTodayIndex, DAY_LABELS } from "@/src/lib/weekly-plan";
 import type { PlanTier } from "@/src/lib/weekly-plan";
 import { TRAINING_PROGRAMS, getBlocksBySection } from "@/src/lib/trainingPrograms";
 import type { TrainingBlock } from "@/src/lib/trainingPrograms";
@@ -318,9 +317,7 @@ function LockedTierPreview({ tier }: { tier: "starter" | "pro" }) {
 }
 
 function TrainingContent() {
-  const searchParams = useSearchParams();
-  const urlPlan = parsePlanTier(searchParams.get("plan")) as Plan;
-  const [plan, setPlan] = useState<Plan>(urlPlan);
+  const [plan, setPlan] = useState<Plan>("free");
 
   useEffect(() => {
     fetchUserPlan().then((dbPlan) => setPlan(dbPlan as Plan));
@@ -837,6 +834,29 @@ function TrainingContent() {
             <LockedTierPreview tier="starter" />
 
             <div className="h-px w-full bg-neutral-800/60" />
+
+            <LockedTierPreview tier="pro" />
+
+            <div className="flex justify-center pb-2 pt-1">
+              <Link
+                href="/pricing"
+                className="text-xs text-neutral-500 transition-colors hover:text-neutral-300"
+              >
+                Compare all plans &rarr;
+              </Link>
+            </div>
+          </>
+        )}
+
+        {plan === "starter" && (
+          <>
+            <div className="h-px w-full bg-neutral-800/60" />
+
+            <div className="pt-10 pb-2">
+              <p className="text-center text-xs text-neutral-600">
+                See what&apos;s included in Pro
+              </p>
+            </div>
 
             <LockedTierPreview tier="pro" />
 

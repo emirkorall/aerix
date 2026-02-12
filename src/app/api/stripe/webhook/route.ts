@@ -23,28 +23,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
+  console.log(`[stripe] webhook received: ${event.type}`);
+
   const supabase = createAdminClient();
 
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
       const userId = session.metadata?.user_id;
-      const metaPlan = session.metadata?.plan;
 
       if (!userId) {
         console.warn("[stripe] checkout.session.completed missing user_id metadata");
         break;
       }
 
-      // Determine plan from metadata or from the subscription's price
-      let plan = metaPlan;
-      if (!plan && session.subscription) {
-        const sub = await stripe.subscriptions.retrieve(
-          session.subscription as string
-        );
-        const priceId = sub.items.data[0]?.price?.id;
+      // Determine plan from line items (primary) or metadata (fallback)
+      let plan: string | undefined;
+      try {
+        const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
+        const priceId = lineItems.data[0]?.price?.id;
         if (priceId) plan = getPlanFromPriceId(priceId) ?? undefined;
+      } catch (e) {
+        console.warn("[stripe] failed to retrieve line items:", e);
       }
+
+      if (!plan) plan = session.metadata?.plan;
 
       if (!plan) {
         console.warn("[stripe] could not determine plan for session", session.id);
@@ -63,7 +66,7 @@ export async function POST(request: Request) {
       if (error) {
         console.error("[stripe] failed to update profile:", error);
       } else {
-        console.log(`[stripe] activated plan=${plan} for user=${userId}`);
+        console.log(`[stripe] activated plan=${plan} customer=${session.customer} user=${userId}`);
       }
       break;
     }
