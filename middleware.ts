@@ -70,10 +70,10 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/login",
-    "/dashboard/:path*",
-    "/training/:path*",
-    "/progress/:path*",
-    "/settings/:path*",
+    /*
+     * Match all paths except static assets and API routes.
+     * This ensures session cookies are refreshed on every page navigation.
+     */
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

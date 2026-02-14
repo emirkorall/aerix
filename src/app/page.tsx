@@ -1,6 +1,18 @@
 import Link from "next/link";
+import { createClient } from "@/src/lib/supabase/server";
+import { isSupabaseConfigured } from "@/src/lib/supabase/validate";
 
-export default function Home() {
+export default async function Home() {
+  let signedIn = false;
+
+  if (isSupabaseConfigured()) {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    signedIn = !!user;
+  }
+
   return (
     <main className="min-h-screen bg-[#060608] text-white">
       <div className="mx-auto max-w-5xl px-6">
@@ -15,12 +27,21 @@ export default function Home() {
             >
               Pricing
             </Link>
-            <Link
-              href="/login"
-              className="rounded-md bg-white/[0.07] px-4 py-2 text-sm font-medium text-neutral-200 transition-colors hover:bg-white/[0.12]"
-            >
-              Sign in
-            </Link>
+            {signedIn ? (
+              <Link
+                href="/dashboard"
+                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500"
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <Link
+                href="/login"
+                className="rounded-md bg-white/[0.07] px-4 py-2 text-sm font-medium text-neutral-200 transition-colors hover:bg-white/[0.12]"
+              >
+                Sign in
+              </Link>
+            )}
           </div>
         </nav>
 
