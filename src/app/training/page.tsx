@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   isCompletedToday,
   setCompletedToday,
@@ -25,6 +26,9 @@ import { TRAINING_PROGRAMS, getBlocksBySection } from "@/src/lib/trainingProgram
 import type { TrainingBlock } from "@/src/lib/trainingPrograms";
 import PremiumPreview from "@/src/components/PremiumPreview";
 import { fetchUserPlan } from "@/src/lib/user-plan";
+import { createClient } from "@/src/lib/supabase/client";
+import { getDrillById, getLocalQueue, setLocalQueue, QUEUE_LIMITS } from "@/src/lib/drill-library";
+import { syncDrillQueue, replaceQueue } from "@/src/lib/supabase/sync-drills";
 
 type Plan = "free" | "starter" | "pro";
 
@@ -61,10 +65,353 @@ const tasks = [
 export default function Training() {
   return (
     <Suspense>
-      <TrainingContent />
+      <TrainingRouter />
     </Suspense>
   );
 }
+
+function TrainingRouter() {
+  const params = useSearchParams();
+  if (params.get("mode") === "queue") {
+    return <QueueSession />;
+  }
+  return <TrainingContent />;
+}
+
+// ── Queue Session Mode ──
+
+function QueueSession() {
+  const [plan, setPlan] = useState<Plan>("free");
+  const [signedIn, setSignedIn] = useState(false);
+  const [queueIds, setQueueIds] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [doneDrills, setDoneDrills] = useState<Set<string>>(new Set());
+  const [sessionComplete, setSessionComplete] = useState(false);
+
+  useEffect(() => {
+    setQueueIds(getLocalQueue());
+
+    const supabase = createClient();
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (user) {
+        setSignedIn(true);
+        const p = await fetchUserPlan();
+        setPlan(p as Plan);
+        await syncDrillQueue();
+        setQueueIds(getLocalQueue());
+      }
+      setLoading(false);
+    });
+  }, []);
+
+  const allDrills = queueIds
+    .map(getDrillById)
+    .filter((d): d is TrainingBlock => !!d);
+  const limit = QUEUE_LIMITS[plan];
+  const drills = allDrills.slice(0, limit);
+  const gated = allDrills.length > drills.length;
+
+  const currentDrill = drills[currentIndex] ?? null;
+
+  function markDone() {
+    if (!currentDrill) return;
+    const next = new Set(doneDrills);
+    next.add(currentDrill.id);
+    setDoneDrills(next);
+
+    // Auto-advance to next incomplete
+    const nextIdx = drills.findIndex((d, i) => i > currentIndex && !next.has(d.id));
+    if (nextIdx !== -1) {
+      setCurrentIndex(nextIdx);
+    } else if (next.size >= drills.length) {
+      // All done
+      setSessionComplete(true);
+      setLocalQueue([]);
+      if (signedIn) replaceQueue([]);
+      setCompletedToday(true);
+    }
+  }
+
+  function nextDrill() {
+    const nextIdx = drills.findIndex((d, i) => i > currentIndex && !doneDrills.has(d.id));
+    if (nextIdx !== -1) setCurrentIndex(nextIdx);
+  }
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-[#060608] text-white">
+        <div className="mx-auto max-w-xl px-6 py-20">
+          <p className="text-sm text-neutral-600">Loading queue…</p>
+        </div>
+      </main>
+    );
+  }
+
+  // Empty queue
+  if (drills.length === 0) {
+    return (
+      <main className="min-h-screen bg-[#060608] text-white">
+        <div className="mx-auto max-w-xl px-6">
+          <nav className="flex items-center justify-between py-6">
+            <Link href="/" className="text-sm font-semibold tracking-[0.2em] uppercase text-white">
+              Aerix
+            </Link>
+            <Link href="/dashboard" className="text-sm text-neutral-400 transition-colors hover:text-white">
+              Dashboard
+            </Link>
+          </nav>
+          <section className="flex flex-col items-center py-32 text-center">
+            <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-neutral-800/40">
+              <svg className="h-6 w-6 text-neutral-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-white">No drills queued</h2>
+            <p className="mt-3 text-sm text-neutral-400">
+              Add drills to your queue from the library to start a session.
+            </p>
+            <Link
+              href="/library"
+              className="mt-8 flex h-11 items-center justify-center rounded-lg bg-indigo-600 px-6 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+            >
+              Go to Library
+            </Link>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
+  // Session complete
+  if (sessionComplete) {
+    return (
+      <main className="min-h-screen bg-[#060608] text-white">
+        <div className="mx-auto max-w-xl px-6">
+          <nav className="flex items-center justify-between py-6">
+            <Link href="/" className="text-sm font-semibold tracking-[0.2em] uppercase text-white">
+              Aerix
+            </Link>
+            <Link href="/dashboard" className="text-sm text-neutral-400 transition-colors hover:text-white">
+              Dashboard
+            </Link>
+          </nav>
+          <section className="flex flex-col items-center py-32 text-center">
+            <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600/20">
+              <svg className="h-7 w-7 text-indigo-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold tracking-tight text-white">
+              Session complete.
+            </h2>
+            <p className="mt-3 max-w-xs text-sm leading-relaxed text-neutral-400">
+              You worked through {drills.length} {drills.length === 1 ? "drill" : "drills"}. Queue cleared — add more from the library anytime.
+            </p>
+            <div className="mt-8 flex w-full max-w-xs flex-col gap-3">
+              <Link
+                href="/progress"
+                className="flex h-11 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+              >
+                View Progress
+              </Link>
+              <Link
+                href="/dashboard"
+                className="flex h-11 items-center justify-center rounded-lg border border-neutral-800/60 text-sm font-medium text-neutral-400 transition-colors hover:border-neutral-700 hover:text-neutral-300"
+              >
+                Back to Dashboard
+              </Link>
+              <Link
+                href="/library"
+                className="flex h-11 items-center justify-center rounded-lg border border-neutral-800/60 text-sm font-medium text-neutral-400 transition-colors hover:border-neutral-700 hover:text-neutral-300"
+              >
+                Drill Library
+              </Link>
+            </div>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
+  const hasNext = drills.some((d, i) => i > currentIndex && !doneDrills.has(d.id));
+  const isDone = currentDrill ? doneDrills.has(currentDrill.id) : false;
+
+  return (
+    <main className="min-h-screen bg-[#060608] text-white">
+      <div className="mx-auto max-w-xl px-6">
+        <nav className="flex items-center justify-between py-6">
+          <Link href="/" className="text-sm font-semibold tracking-[0.2em] uppercase text-white">
+            Aerix
+          </Link>
+          <div className="flex items-center gap-4">
+            <Link href="/library" className="text-sm text-neutral-400 transition-colors hover:text-white">
+              Library
+            </Link>
+            <Link href="/dashboard" className="text-sm text-neutral-400 transition-colors hover:text-white">
+              Dashboard
+            </Link>
+          </div>
+        </nav>
+
+        <section className="pt-20 pb-10">
+          <div className="mb-3 flex items-center gap-3">
+            <p className="text-xs font-medium uppercase tracking-widest text-neutral-500">
+              Session Queue
+            </p>
+            <span className="rounded-full bg-indigo-600/20 px-2.5 py-0.5 text-[10px] font-medium text-indigo-400">
+              {doneDrills.size}/{drills.length} done
+            </span>
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            Your queued session.
+          </h1>
+          <p className="mt-4 text-base leading-relaxed text-neutral-400">
+            Work through each drill in order. Mark done when you&apos;re ready to move on.
+          </p>
+        </section>
+
+        <div className="h-px w-full bg-neutral-800/60" />
+
+        {/* Queue overview */}
+        <section className="py-6">
+          <div className="flex flex-col gap-1.5">
+            {drills.map((drill, i) => {
+              const done = doneDrills.has(drill.id);
+              const isCurrent = i === currentIndex;
+              return (
+                <button
+                  key={drill.id}
+                  type="button"
+                  onClick={() => setCurrentIndex(i)}
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors ${
+                    isCurrent
+                      ? "bg-indigo-600/10 ring-1 ring-indigo-500/30"
+                      : "hover:bg-white/[0.02]"
+                  }`}
+                >
+                  <span
+                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[10px] font-bold ${
+                      done
+                        ? "bg-indigo-600/20 text-indigo-400"
+                        : isCurrent
+                          ? "bg-neutral-700 text-white"
+                          : "bg-neutral-800/60 text-neutral-600"
+                    }`}
+                  >
+                    {done ? (
+                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                      </svg>
+                    ) : (
+                      i + 1
+                    )}
+                  </span>
+                  <span
+                    className={`truncate text-sm ${
+                      done
+                        ? "text-neutral-600 line-through"
+                        : isCurrent
+                          ? "font-medium text-white"
+                          : "text-neutral-400"
+                    }`}
+                  >
+                    {drill.title}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {gated && (
+            <p className="mt-3 text-xs text-neutral-600">
+              +{allDrills.length - drills.length} more queued.{" "}
+              <span className="rounded-full border border-neutral-800 bg-neutral-900 px-2 py-0.5 text-[9px] font-medium text-neutral-500">
+                Starter+
+              </span>{" "}
+              <Link href="/pricing" className="text-indigo-400 hover:text-indigo-300">
+                queues multiple drills.
+              </Link>
+            </p>
+          )}
+        </section>
+
+        <div className="h-px w-full bg-neutral-800/60" />
+
+        {/* Current drill */}
+        {currentDrill && (
+          <section className="py-10">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-sm font-medium text-neutral-500">
+                Drill {currentIndex + 1} of {drills.length}
+              </h2>
+              {isDone && (
+                <span className="rounded-full bg-indigo-600/20 px-2.5 py-0.5 text-[10px] font-medium text-indigo-400">
+                  Completed
+                </span>
+              )}
+            </div>
+            <VideoBlock
+              block={currentDrill}
+              done={isDone}
+              onToggle={markDone}
+              highlighted={false}
+            />
+            <div className="mt-4 flex gap-3">
+              {!isDone ? (
+                <button
+                  type="button"
+                  onClick={markDone}
+                  className="flex h-10 flex-1 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+                >
+                  Mark Drill Done
+                </button>
+              ) : hasNext ? (
+                <button
+                  type="button"
+                  onClick={nextDrill}
+                  className="flex h-10 flex-1 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+                >
+                  Next Drill &rarr;
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSessionComplete(true);
+                    setLocalQueue([]);
+                    if (signedIn) replaceQueue([]);
+                    setCompletedToday(true);
+                  }}
+                  className="flex h-10 flex-1 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+                >
+                  Finish Session
+                </button>
+              )}
+            </div>
+          </section>
+        )}
+
+        <div className="h-px w-full bg-neutral-800/60" />
+
+        <footer className="flex items-center justify-center gap-4 py-8">
+          <Link href="/library" className="text-xs text-neutral-600 transition-colors hover:text-neutral-400">
+            Library
+          </Link>
+          <span className="text-neutral-800">&middot;</span>
+          <Link href="/dashboard" className="text-xs text-neutral-600 transition-colors hover:text-neutral-400">
+            Dashboard
+          </Link>
+          <span className="text-neutral-800">&middot;</span>
+          <Link href="/" className="text-xs text-neutral-600 transition-colors hover:text-neutral-400">
+            Home
+          </Link>
+        </footer>
+      </div>
+    </main>
+  );
+}
+
+// ── Normal Training Mode ──
 
 function TodaysPlan({ plan, onJumpToDrill }: { plan: PlanTier; onJumpToDrill: (slug: string) => void }) {
   const todayIndex = getTodayIndex();
@@ -215,13 +562,20 @@ function VideoBlock({
           If the embed doesn&apos;t load, use &ldquo;Watch on YouTube&rdquo;.
         </p>
         <div className="flex items-center gap-2.5">
+          <Link
+            href="/library"
+            className="text-[11px] text-neutral-600 transition-colors hover:text-indigo-400"
+          >
+            Save to Library
+          </Link>
+          <span className="text-[11px] text-neutral-700">&middot;</span>
           <a
             href={`https://www.youtube.com/watch?v=${block.videoId}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-[11px] text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            Watch on YouTube &nearr;
+            YouTube &nearr;
           </a>
           <span className="text-[11px] text-neutral-700">&middot;</span>
           <p className="text-[11px] text-neutral-600">By {block.creator}</p>
@@ -413,12 +767,20 @@ function TrainingContent() {
           >
             Aerix
           </Link>
-          <Link
-            href="/pricing"
-            className="text-sm text-neutral-400 transition-colors hover:text-white"
-          >
-            Plans
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/library"
+              className="text-sm text-neutral-400 transition-colors hover:text-white"
+            >
+              Library
+            </Link>
+            <Link
+              href="/pricing"
+              className="text-sm text-neutral-400 transition-colors hover:text-white"
+            >
+              Plans
+            </Link>
+          </div>
         </nav>
 
         <section className="pt-20 pb-10">
@@ -436,12 +798,20 @@ function TrainingContent() {
           <p className="mt-4 max-w-md text-base leading-relaxed text-neutral-400">
             {program.tagline}
           </p>
-          <Link
-            href={`/training/plan?plan=${plan}`}
-            className="mt-4 inline-block text-xs text-neutral-500 hover:text-neutral-300"
-          >
-            View Weekly Plan &rarr;
-          </Link>
+          <div className="mt-4 flex items-center gap-4">
+            <Link
+              href={`/training/plan?plan=${plan}`}
+              className="text-xs text-neutral-500 hover:text-neutral-300"
+            >
+              View Weekly Plan &rarr;
+            </Link>
+            <Link
+              href="/library"
+              className="text-xs text-neutral-500 hover:text-neutral-300"
+            >
+              Build a custom session in Library &rarr;
+            </Link>
+          </div>
         </section>
 
         <div className="h-px w-full bg-neutral-800/60" />

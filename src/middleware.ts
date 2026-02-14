@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isSupabaseConfigured } from "@/src/lib/supabase/validate";
 
-const PROTECTED = ["/dashboard", "/training", "/progress", "/settings"];
+const PROTECTED = ["/dashboard", "/training", "/progress", "/settings", "/rank", "/matchmaking", "/messages"];
 
 function makeSupabase(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -80,5 +80,9 @@ export const config = {
     "/upgrade/:path*",
     "/play/:path*",
     "/profile/:path*",
+    "/rank",
+    "/library",
+    "/matchmaking/:path*",
+    "/messages/:path*",
   ],
 };

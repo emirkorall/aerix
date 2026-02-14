@@ -46,6 +46,8 @@ export default function Dashboard() {
   const [userId, setUserId] = useState<string | null>(null);
   const [userPlan, setUserPlan] = useState<PlanTier>("free");
   const [configError, setConfigError] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [billingLabel, setBillingLabel] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -57,6 +59,26 @@ export default function Dashboard() {
         if (user) {
           syncCompletions().then(syncFromStorage);
           fetchUserPlan().then(setUserPlan);
+          fetch("/api/stripe/status")
+            .then((r) => r.ok ? r.json() : null)
+            .then((data) => {
+              if (!data || data.status === "none") return;
+              if (data.cancel_at_period_end && data.cancel_at) {
+                const date = new Date(data.cancel_at * 1000);
+                setBillingLabel(`Cancels ${date.toLocaleDateString()}`);
+              } else if (data.status === "active") {
+                setBillingLabel("Active");
+              } else if (data.status === "past_due") {
+                setBillingLabel("Past due");
+              } else if (data.status === "trialing") {
+                setBillingLabel("Trial");
+              } else if (data.status === "canceled") {
+                setBillingLabel("Canceled");
+              } else if (data.status === "incomplete") {
+                setBillingLabel("Incomplete");
+              }
+            })
+            .catch(() => {});
         }
       });
     } catch {
@@ -127,6 +149,12 @@ export default function Dashboard() {
               className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
             >
               Settings
+            </Link>
+            <Link
+              href="/library"
+              className="text-sm text-neutral-400 transition-colors hover:text-white"
+            >
+              Library
             </Link>
             <Link
               href="/pricing"
@@ -402,7 +430,7 @@ export default function Dashboard() {
                   {trainedToday ? "Edit session" : "Start session"} &rarr;
                 </Link>
                 <Link
-                  href="/progress"
+                  href="/rank"
                   className="text-[11px] font-medium text-neutral-500 transition-colors hover:text-neutral-300"
                 >
                   Update rank &rarr;
@@ -500,10 +528,55 @@ export default function Dashboard() {
 
         <section className="py-10">
           <h2 className="mb-6 text-sm font-medium text-neutral-500">
+            Training Library
+          </h2>
+          <Link
+            href="/library"
+            className="flex items-center gap-4 rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5 transition-colors hover:border-neutral-700/60"
+          >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-600/15">
+              <svg
+                className="h-4 w-4 text-indigo-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"
+                />
+              </svg>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-white">
+                Open Library
+              </p>
+              <p className="mt-0.5 text-xs text-neutral-500">
+                Save drills and build your next session.
+              </p>
+            </div>
+            <svg
+              className="h-4 w-4 shrink-0 text-neutral-700"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+            </svg>
+          </Link>
+        </section>
+
+        <div className="h-px w-full bg-neutral-800/60" />
+
+        <section className="py-10">
+          <h2 className="mb-6 text-sm font-medium text-neutral-500">
             Play Together
           </h2>
           <Link
-            href="/paywall"
+            href="/matchmaking"
             className="flex items-center gap-4 rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5 transition-colors hover:border-neutral-700/60"
           >
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-600/15">
@@ -529,9 +602,15 @@ export default function Dashboard() {
                 Team up with players who match your rank and goals.
               </p>
             </div>
-            <span className="shrink-0 rounded-full border border-neutral-800 bg-neutral-900 px-2 py-0.5 text-[10px] font-medium text-neutral-500">
-              Starter+
-            </span>
+            <svg
+              className="h-4 w-4 shrink-0 text-neutral-700"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+            </svg>
           </Link>
         </section>
 
@@ -606,6 +685,12 @@ export default function Dashboard() {
             >
               View Progress
             </Link>
+            <Link
+              href="/library"
+              className="flex h-11 items-center justify-center rounded-lg border border-neutral-800/60 text-sm font-medium text-neutral-400 hover:border-neutral-700 hover:text-neutral-300"
+            >
+              Drill Library
+            </Link>
             {!trainedToday && (
               <button
                 onClick={() => toggleDay(todayIndex)}
@@ -638,15 +723,46 @@ export default function Dashboard() {
                   }`}>
                     {userPlan}
                   </span>
-                  {userPlan === "free" && (
+                  {userPlan === "free" ? (
                     <Link
                       href="/pricing"
                       className="text-[11px] text-indigo-400 transition-colors hover:text-indigo-300"
                     >
-                      Upgrade
+                      View Plans
                     </Link>
+                  ) : (
+                    <button
+                      disabled={portalLoading}
+                      onClick={async () => {
+                        setPortalLoading(true);
+                        try {
+                          const res = await fetch("/api/stripe/portal", { method: "POST" });
+                          if (res.status === 401) {
+                            router.push("/login?returnTo=/dashboard");
+                            return;
+                          }
+                          const { url } = await res.json();
+                          if (url) window.location.href = url;
+                        } finally {
+                          setPortalLoading(false);
+                        }
+                      }}
+                      className="text-[11px] text-indigo-400 transition-colors hover:text-indigo-300 disabled:text-neutral-600"
+                    >
+                      {portalLoading ? "Loading…" : "Manage Subscription"}
+                    </button>
                   )}
                 </div>
+                {billingLabel && (
+                  <p className="mt-1 text-[11px] text-neutral-500">
+                    Billing: <span className={
+                      billingLabel === "Active" ? "text-emerald-400" :
+                      billingLabel.startsWith("Cancels") ? "text-amber-400" :
+                      billingLabel === "Past due" ? "text-red-400" :
+                      "text-neutral-400"
+                    }>{billingLabel}</span>
+                  </p>
+                )}
               </div>
               <div>
                 <p className="text-[11px] font-medium text-neutral-500">Email</p>

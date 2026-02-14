@@ -22,6 +22,12 @@ export default async function Home() {
           </span>
           <div className="flex items-center gap-6">
             <Link
+              href="/library"
+              className="text-sm text-neutral-400 transition-colors hover:text-white"
+            >
+              Library
+            </Link>
+            <Link
               href="/pricing"
               className="text-sm text-neutral-400 transition-colors hover:text-white"
             >
@@ -87,7 +93,7 @@ export default async function Home() {
           <p className="mb-8 text-center text-xs font-medium uppercase tracking-widest text-neutral-500">
             Explore
           </p>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Link
               href="/training?plan=free"
               className="group rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6 transition-colors hover:border-indigo-500/30 hover:bg-[#0e0e14]"
@@ -145,7 +151,35 @@ export default async function Home() {
             </Link>
 
             <Link
-              href="/play"
+              href="/library"
+              className="group rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6 transition-colors hover:border-indigo-500/30 hover:bg-[#0e0e14]"
+            >
+              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-500/10">
+                <svg
+                  className="h-5 w-5 text-indigo-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-sm font-semibold text-white">Drill Library</h3>
+              <p className="mt-1.5 text-xs leading-relaxed text-neutral-500">
+                Save drills you like and build your next session queue.
+              </p>
+              <span className="mt-4 inline-block text-xs font-medium text-indigo-400 opacity-0 transition-opacity group-hover:opacity-100">
+                Open →
+              </span>
+            </Link>
+
+            <Link
+              href="/matchmaking"
               className="group rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6 transition-colors hover:border-indigo-500/30 hover:bg-[#0e0e14]"
             >
               <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-500/10">

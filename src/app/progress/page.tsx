@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
+import { createClient } from "@/src/lib/supabase/client";
+import { syncCompletions } from "@/src/lib/supabase/sync-completions";
 import { syncRankSnapshots, upsertRankSnapshot } from "@/src/lib/supabase/sync-rank-snapshots";
 import PremiumPreview from "@/src/components/PremiumPreview";
 import { fetchUserPlan } from "@/src/lib/user-plan";
@@ -46,8 +48,43 @@ export default function ProgressPage() {
   );
 }
 
+function StatCard({
+  label,
+  value,
+  sub,
+  locked,
+  lockLabel,
+}: {
+  label: string;
+  value: string;
+  sub: string;
+  locked?: boolean;
+  lockLabel?: string;
+}) {
+  return (
+    <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-4">
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] font-medium text-neutral-500">{label}</p>
+        {locked && lockLabel && (
+          <span className="rounded-full border border-neutral-800 bg-neutral-900 px-2 py-0.5 text-[9px] font-medium text-neutral-500">
+            {lockLabel}
+          </span>
+        )}
+      </div>
+      {locked ? (
+        <p className="mt-2 text-2xl font-bold text-neutral-700">—</p>
+      ) : (
+        <p className="mt-2 text-2xl font-bold text-white">{value}</p>
+      )}
+      <p className="mt-1 text-[11px] text-neutral-600">{locked ? `Unlock with ${lockLabel}` : sub}</p>
+    </div>
+  );
+}
+
 function ProgressContent() {
   const [plan, setPlan] = useState<"free" | "starter" | "pro">("free");
+  const [signedIn, setSignedIn] = useState(false);
+  const [ready, setReady] = useState(false);
   const [completedDates, setCompletedDates] = useState<Set<string>>(new Set());
   const [allNotes, setAllNotes] = useState<Record<string, SessionNote>>({});
   const [allTags, setAllTags] = useState<Record<string, FocusTag[]>>({});
@@ -60,7 +97,7 @@ function ProgressContent() {
   const [formRank, setFormRank] = useState<Rank>("Gold I");
   const [onboarding, setOnboarding] = useState<OnboardingData | null>(null);
 
-  useEffect(() => {
+  function loadFromStorage() {
     setCompletedDates(getCompletedDates());
     setAllNotes(getSessionNotes());
     setAllTags(getSessionTags());
@@ -71,14 +108,25 @@ function ProgressContent() {
     setRankPlaylist(pl);
     setFormPlaylist(pl);
     setOnboarding(getOnboarding());
+  }
 
-    // Background sync rank snapshots with Supabase
-    syncRankSnapshots().then(() => {
-      setRankSnapshots(getRankSnapshots());
+  useEffect(() => {
+    // Load local data immediately
+    loadFromStorage();
+
+    // Check auth + sync DB for signed-in users
+    const supabase = createClient();
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (user) {
+        setSignedIn(true);
+        fetchUserPlan().then(setPlan);
+        // Sync DB → localStorage, then re-read
+        await Promise.all([syncCompletions(), syncRankSnapshots()]);
+        loadFromStorage();
+      }
+      setReady(true);
     });
-
-    // Fetch real plan from DB for signed-in users
-    fetchUserPlan().then(setPlan);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const thisWeekDates = getWeekDates(0);
@@ -88,10 +136,14 @@ function ProgressContent() {
   const thisWeekCount = thisWeekDates.filter((d) => completedDates.has(d)).length;
   const lastWeekCount = lastWeekDates.filter((d) => completedDates.has(d)).length;
 
-  const recentNotes = Object.entries(allNotes)
-    .filter(([, note]) => note.better.trim() || note.tomorrow.trim())
-    .sort(([a], [b]) => b.localeCompare(a))
-    .slice(0, 3);
+  let weeklyTotalMinutes = 0;
+  let weeklySessionsWithDuration = 0;
+  for (const date of thisWeekDates) {
+    if (allDurations[date]) {
+      weeklyTotalMinutes += allDurations[date];
+      weeklySessionsWithDuration++;
+    }
+  }
 
   const weeklyTagCounts: { tag: FocusTag; count: number }[] = [];
   {
@@ -110,21 +162,37 @@ function ProgressContent() {
     weeklyTagCounts.sort((a, b) => b.count - a.count);
   }
 
-  let weeklyTotalMinutes = 0;
-  let weeklySessionsWithDuration = 0;
-  for (const date of thisWeekDates) {
-    if (allDurations[date]) {
-      weeklyTotalMinutes += allDurations[date];
-      weeklySessionsWithDuration++;
+  // Rank delta
+  const filteredSnapshots = rankSnapshots.filter((s) => s.playlist === rankPlaylist);
+  const latestRank = filteredSnapshots.length > 0 ? filteredSnapshots[filteredSnapshots.length - 1] : null;
+  const prevRank = filteredSnapshots.length > 1 ? filteredSnapshots[filteredSnapshots.length - 2] : null;
+
+  let rankDeltaValue = "—";
+  let rankDeltaSub = "Add a rank check-in";
+  if (latestRank && prevRank) {
+    const diff = getRankIndex(latestRank.rank) - getRankIndex(prevRank.rank);
+    if (diff > 0) {
+      rankDeltaValue = `+${diff}`;
+      rankDeltaSub = `${prevRank.rank} → ${latestRank.rank}`;
+    } else if (diff < 0) {
+      rankDeltaValue = `${diff}`;
+      rankDeltaSub = `${prevRank.rank} → ${latestRank.rank}`;
+    } else {
+      rankDeltaValue = "0";
+      rankDeltaSub = `Holding at ${latestRank.rank}`;
     }
+  } else if (latestRank) {
+    rankDeltaValue = "—";
+    rankDeltaSub = `${latestRank.rank} · Need 2+ check-ins`;
   }
-  const weeklyAvgMinutes =
-    weeklySessionsWithDuration > 0
-      ? Math.round(weeklyTotalMinutes / weeklySessionsWithDuration)
-      : 0;
 
   const delta = thisWeekCount - lastWeekCount;
   const trainedToday = completedDates.has(today);
+
+  const recentNotes = Object.entries(allNotes)
+    .filter(([, note]) => note.better.trim() || note.tomorrow.trim())
+    .sort(([a], [b]) => b.localeCompare(a))
+    .slice(0, 3);
 
   const insight =
     thisWeekCount === 0
@@ -159,7 +227,7 @@ function ProgressContent() {
 
         <section className="pt-20 pb-10">
           <p className="mb-3 text-xs font-medium uppercase tracking-widest text-neutral-500">
-            Progress
+            Progress Insights
           </p>
           <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
             Your progress.
@@ -167,30 +235,88 @@ function ProgressContent() {
           <p className="mt-4 text-base leading-relaxed text-neutral-400">
             Consistency compounds. Here&apos;s proof you&apos;re showing up.
           </p>
-          {plan !== "free" && (
-            <div className="mt-5">
+          <div className="mt-5 flex items-center gap-2">
+            {signedIn && plan !== "free" && (
               <span className="rounded-full bg-indigo-600/20 px-2.5 py-0.5 text-[10px] font-medium text-indigo-400 capitalize">
                 {plan}
               </span>
-            </div>
-          )}
+            )}
+            {ready && !signedIn && (
+              <span className="rounded-full border border-neutral-800 bg-neutral-900 px-2.5 py-0.5 text-[10px] font-medium text-neutral-500">
+                Preview · local data
+              </span>
+            )}
+          </div>
         </section>
 
         <div className="h-px w-full bg-neutral-800/60" />
 
-        {/* ── This Week ── */}
+        {/* ── Stat Cards ── */}
+        <section className="py-10">
+          <h2 className="mb-6 text-sm font-medium text-neutral-500">
+            Overview
+          </h2>
+          <div className="grid grid-cols-2 gap-3">
+            <StatCard
+              label="Current Streak"
+              value={`${streaks.current}`}
+              sub={streaks.current === 0 ? "Start today" : `${streaks.current === 1 ? "day" : "days"} in a row`}
+            />
+            <StatCard
+              label="Best Streak"
+              value={`${streaks.best}`}
+              sub={
+                streaks.current >= streaks.best && streaks.best > 0
+                  ? "Personal best!"
+                  : `${streaks.best === 1 ? "day" : "days"} record`
+              }
+              locked={plan === "free"}
+              lockLabel="Starter+"
+            />
+            <StatCard
+              label="This Week"
+              value={`${thisWeekCount}/7`}
+              sub={
+                delta > 0
+                  ? `+${delta} vs last week`
+                  : delta < 0
+                    ? `${delta} vs last week`
+                    : "Same as last week"
+              }
+            />
+            <StatCard
+              label="Last Week"
+              value={`${lastWeekCount}/7`}
+              sub="Days trained"
+            />
+            <StatCard
+              label="Minutes This Week"
+              value={weeklyTotalMinutes > 0 ? `${weeklyTotalMinutes}` : "—"}
+              sub={
+                weeklySessionsWithDuration > 0
+                  ? `${weeklySessionsWithDuration} ${weeklySessionsWithDuration === 1 ? "session" : "sessions"} logged`
+                  : "No sessions logged"
+              }
+            />
+            <StatCard
+              label={`Rank Delta (${rankPlaylist})`}
+              value={rankDeltaValue}
+              sub={rankDeltaSub}
+              locked={plan !== "pro"}
+              lockLabel={plan === "free" ? "Starter+" : "Pro"}
+            />
+          </div>
+        </section>
+
+        <div className="h-px w-full bg-neutral-800/60" />
+
+        {/* ── This Week Calendar ── */}
         <section className="py-10">
           <h2 className="mb-6 text-sm font-medium text-neutral-500">
             This Week
           </h2>
           <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6">
-            <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-bold text-white">
-                {thisWeekCount}
-              </span>
-              <span className="text-sm text-neutral-500">/ 7 days trained</span>
-            </div>
-            <div className="mt-4 grid grid-cols-7 gap-1.5">
+            <div className="grid grid-cols-7 gap-1.5">
               {thisWeekDates.map((date, i) => {
                 const done = completedDates.has(date);
                 const isToday = date === today;
@@ -238,118 +364,37 @@ function ProgressContent() {
                 );
               })}
             </div>
+            <p className="mt-3 text-center text-xs text-neutral-600">
+              {insight}
+            </p>
           </div>
         </section>
 
         <div className="h-px w-full bg-neutral-800/60" />
 
-        {/* ── Last Week ── */}
+        {/* ── This Week Focus ── */}
         <section className="py-10">
           <h2 className="mb-6 text-sm font-medium text-neutral-500">
-            Last Week
+            Focus Tags
           </h2>
-          <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-bold text-white">
-                  {lastWeekCount}
-                </span>
-                <span className="text-sm text-neutral-500">
-                  / 7 days trained
-                </span>
-              </div>
-              {delta !== 0 && (
+          {weeklyTagCounts.length === 0 ? (
+            <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
+              <p className="text-sm text-neutral-600">
+                No focus tags yet. Tag what you practiced after each session.
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {weeklyTagCounts.map(({ tag, count }) => (
                 <span
-                  className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
-                    delta > 0
-                      ? "bg-indigo-600/15 text-indigo-400"
-                      : "bg-neutral-800 text-neutral-500"
-                  }`}
+                  key={tag}
+                  className="rounded-full border border-indigo-500/30 bg-indigo-600/10 px-3 py-1.5 text-xs font-medium text-indigo-300"
                 >
-                  {delta > 0 ? "+" : ""}
-                  {delta} vs this week
+                  {tag} &middot; {count}
                 </span>
-              )}
+              ))}
             </div>
-            <div className="mt-4 grid grid-cols-7 gap-1.5">
-              {lastWeekDates.map((date, i) => {
-                const done = completedDates.has(date);
-                return (
-                  <div key={date} className="flex flex-col items-center gap-1.5">
-                    <span className="text-[10px] font-medium text-neutral-600">
-                      {DAY_LABELS[i]}
-                    </span>
-                    <div
-                      className={`flex h-7 w-7 items-center justify-center rounded-lg ${
-                        done ? "bg-indigo-600/20" : "bg-neutral-800/30"
-                      }`}
-                    >
-                      {done ? (
-                        <svg
-                          className="h-3.5 w-3.5 text-indigo-400"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth={2.5}
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="m4.5 12.75 6 6 9-13.5"
-                          />
-                        </svg>
-                      ) : (
-                        <div className="h-1.5 w-1.5 rounded-full bg-neutral-700" />
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        <div className="h-px w-full bg-neutral-800/60" />
-
-        {/* ── Streak ── */}
-        <section className="py-10">
-          <h2 className="mb-6 text-sm font-medium text-neutral-500">
-            Streak
-          </h2>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
-              <p className="text-xs font-medium text-neutral-500">Current</p>
-              <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="text-3xl font-bold text-white">
-                  {streaks.current}
-                </span>
-                <span className="text-xs text-neutral-600">
-                  {streaks.current === 1 ? "day" : "days"}
-                </span>
-              </div>
-              {streaks.current > 0 && (
-                <p className="mt-2 text-[11px] text-neutral-600">
-                  Keep it going.
-                </p>
-              )}
-            </div>
-            <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
-              <p className="text-xs font-medium text-neutral-500">Best</p>
-              <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="text-3xl font-bold text-white">
-                  {streaks.best}
-                </span>
-                <span className="text-xs text-neutral-600">
-                  {streaks.best === 1 ? "day" : "days"}
-                </span>
-              </div>
-              {streaks.best > 0 && streaks.current >= streaks.best && (
-                <p className="mt-2 text-[11px] text-indigo-400">
-                  Personal best!
-                </p>
-              )}
-            </div>
-          </div>
+          )}
         </section>
 
         <div className="h-px w-full bg-neutral-800/60" />
@@ -380,215 +425,135 @@ function ProgressContent() {
               ))}
             </div>
           </div>
-          {(() => {
-            const filtered = rankSnapshots.filter(
-              (s) => s.playlist === rankPlaylist
-            );
-            const current = filtered.length > 0 ? filtered[filtered.length - 1] : null;
-            const previous = filtered.length > 1 ? filtered[filtered.length - 2] : null;
-
-            let trend: "up" | "down" | "same" | null = null;
-            if (current && previous) {
-              const ci = getRankIndex(current.rank);
-              const pi = getRankIndex(previous.rank);
-              if (ci > pi) trend = "up";
-              else if (ci < pi) trend = "down";
-              else trend = "same";
-            }
-
-            return (
-              <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
-                {current ? (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <span className="text-lg font-bold text-white">
-                        {current.rank}
-                      </span>
-                      {trend && (
-                        <span
-                          className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
-                            trend === "up"
-                              ? "bg-indigo-600/15 text-indigo-400"
-                              : trend === "down"
-                                ? "bg-red-500/10 text-red-400"
-                                : "bg-neutral-800 text-neutral-500"
-                          }`}
-                        >
-                          {trend === "up"
-                            ? "Trending up"
+          <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
+            {latestRank ? (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-bold text-white">
+                    {latestRank.rank}
+                  </span>
+                  {prevRank && (() => {
+                    const ci = getRankIndex(latestRank.rank);
+                    const pi = getRankIndex(prevRank.rank);
+                    const trend = ci > pi ? "up" : ci < pi ? "down" : "same";
+                    return (
+                      <span
+                        className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium ${
+                          trend === "up"
+                            ? "bg-indigo-600/15 text-indigo-400"
                             : trend === "down"
-                              ? "Trending down"
-                              : "No change"}
-                        </span>
-                      )}
-                    </div>
-                    <p className="mt-2 text-[11px] text-neutral-600">
-                      Last updated: {formatDate(current.date)}
-                    </p>
-                  </>
-                ) : (
-                  <p className="text-sm text-neutral-600">
-                    Not set yet. Add your current rank to start tracking.
-                  </p>
-                )}
+                              ? "bg-red-500/10 text-red-400"
+                              : "bg-neutral-800 text-neutral-500"
+                        }`}
+                      >
+                        {trend === "up"
+                          ? "Trending up"
+                          : trend === "down"
+                            ? "Trending down"
+                            : "No change"}
+                      </span>
+                    );
+                  })()}
+                </div>
+                <p className="mt-2 text-[11px] text-neutral-600">
+                  Last updated: {formatDate(latestRank.date)}
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-neutral-600">
+                Not set yet.{" "}
+                <Link
+                  href="/rank"
+                  className="text-indigo-400 hover:text-indigo-300"
+                >
+                  Add a rank check-in
+                </Link>{" "}
+                to start tracking.
+              </p>
+            )}
+            <div className="mt-4 flex items-center gap-4">
+              <button
+                type="button"
+                onClick={() => setShowRankForm((v) => !v)}
+                className="text-xs font-medium text-indigo-400 transition-colors hover:text-indigo-300"
+              >
+                {showRankForm ? "Cancel" : "Quick Update"}
+              </button>
+              <Link
+                href="/rank"
+                className="text-xs text-neutral-500 transition-colors hover:text-neutral-300"
+              >
+                Full check-in &rarr;
+              </Link>
+            </div>
+            {showRankForm && (
+              <div className="mt-4 flex flex-col gap-3 border-t border-neutral-800/60 pt-4">
+                <div>
+                  <label
+                    htmlFor="rank-playlist"
+                    className="mb-1.5 block text-[11px] font-medium text-neutral-500"
+                  >
+                    Playlist
+                  </label>
+                  <select
+                    id="rank-playlist"
+                    value={formPlaylist}
+                    onChange={(e) =>
+                      setFormPlaylist(e.target.value as Playlist)
+                    }
+                    className="w-full rounded-lg border border-neutral-800/60 bg-[#060608] px-3 py-2 text-sm text-white outline-none focus:border-neutral-700"
+                  >
+                    {PLAYLISTS.map((pl) => (
+                      <option key={pl} value={pl}>
+                        {pl}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label
+                    htmlFor="rank-select"
+                    className="mb-1.5 block text-[11px] font-medium text-neutral-500"
+                  >
+                    Rank
+                  </label>
+                  <select
+                    id="rank-select"
+                    value={formRank}
+                    onChange={(e) =>
+                      setFormRank(e.target.value as Rank)
+                    }
+                    className="w-full rounded-lg border border-neutral-800/60 bg-[#060608] px-3 py-2 text-sm text-white outline-none focus:border-neutral-700"
+                  >
+                    {RANKS.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <button
                   type="button"
-                  onClick={() => setShowRankForm((v) => !v)}
-                  className="mt-4 text-xs font-medium text-indigo-400 transition-colors hover:text-indigo-300"
+                  onClick={() => {
+                    const snapshot: RankSnapshot = {
+                      date: getToday(),
+                      playlist: formPlaylist,
+                      rank: formRank,
+                    };
+                    saveRankSnapshot(snapshot);
+                    upsertRankSnapshot(snapshot);
+                    setRankSnapshots((prev) => [...prev, snapshot]);
+                    setRankPlaylist(formPlaylist);
+                    setSavedPlaylist(formPlaylist);
+                    setShowRankForm(false);
+                  }}
+                  className="flex h-9 items-center justify-center rounded-lg bg-indigo-600 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
                 >
-                  {showRankForm ? "Cancel" : "Update Rank"}
+                  Save Rank
                 </button>
-                {showRankForm && (
-                  <div className="mt-4 flex flex-col gap-3 border-t border-neutral-800/60 pt-4">
-                    <div>
-                      <label
-                        htmlFor="rank-playlist"
-                        className="mb-1.5 block text-[11px] font-medium text-neutral-500"
-                      >
-                        Playlist
-                      </label>
-                      <select
-                        id="rank-playlist"
-                        value={formPlaylist}
-                        onChange={(e) =>
-                          setFormPlaylist(e.target.value as Playlist)
-                        }
-                        className="w-full rounded-lg border border-neutral-800/60 bg-[#060608] px-3 py-2 text-sm text-white outline-none focus:border-neutral-700"
-                      >
-                        {PLAYLISTS.map((pl) => (
-                          <option key={pl} value={pl}>
-                            {pl}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="rank-select"
-                        className="mb-1.5 block text-[11px] font-medium text-neutral-500"
-                      >
-                        Rank
-                      </label>
-                      <select
-                        id="rank-select"
-                        value={formRank}
-                        onChange={(e) =>
-                          setFormRank(e.target.value as Rank)
-                        }
-                        className="w-full rounded-lg border border-neutral-800/60 bg-[#060608] px-3 py-2 text-sm text-white outline-none focus:border-neutral-700"
-                      >
-                        {RANKS.map((r) => (
-                          <option key={r} value={r}>
-                            {r}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const snapshot: RankSnapshot = {
-                          date: getToday(),
-                          playlist: formPlaylist,
-                          rank: formRank,
-                        };
-                        saveRankSnapshot(snapshot);
-                        upsertRankSnapshot(snapshot);
-                        setRankSnapshots((prev) => [...prev, snapshot]);
-                        setRankPlaylist(formPlaylist);
-                        setSavedPlaylist(formPlaylist);
-                        setShowRankForm(false);
-                      }}
-                      className="flex h-9 items-center justify-center rounded-lg bg-indigo-600 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
-                    >
-                      Save Rank
-                    </button>
-                  </div>
-                )}
               </div>
-            );
-          })()}
-        </section>
-
-        <div className="h-px w-full bg-neutral-800/60" />
-
-        {/* ── This Week Insight ── */}
-        <section className="py-10">
-          <h2 className="mb-6 text-sm font-medium text-neutral-500">
-            This Week Insight
-          </h2>
-          <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
-            <p className="text-sm leading-relaxed text-neutral-300">
-              {insight}
-            </p>
+            )}
           </div>
-        </section>
-
-        <div className="h-px w-full bg-neutral-800/60" />
-
-        {/* ── This Week Focus ── */}
-        <section className="py-10">
-          <h2 className="mb-6 text-sm font-medium text-neutral-500">
-            This Week Focus
-          </h2>
-          {weeklyTagCounts.length === 0 ? (
-            <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
-              <p className="text-sm text-neutral-600">
-                No focus tags yet. Tag what you practiced after each session.
-              </p>
-            </div>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {weeklyTagCounts.map(({ tag, count }) => (
-                <span
-                  key={tag}
-                  className="rounded-full border border-indigo-500/30 bg-indigo-600/10 px-3 py-1.5 text-xs font-medium text-indigo-300"
-                >
-                  {tag} &middot; {count}
-                </span>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <div className="h-px w-full bg-neutral-800/60" />
-
-        {/* ── This Week Time ── */}
-        <section className="py-10">
-          <h2 className="mb-6 text-sm font-medium text-neutral-500">
-            This Week Time
-          </h2>
-          {weeklySessionsWithDuration === 0 ? (
-            <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
-              <p className="text-sm text-neutral-600">
-                No duration logged yet. After each session, note how long you
-                trained.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
-                <p className="text-xs font-medium text-neutral-500">Total</p>
-                <div className="mt-2 flex items-baseline gap-1.5">
-                  <span className="text-3xl font-bold text-white">
-                    {weeklyTotalMinutes}
-                  </span>
-                  <span className="text-xs text-neutral-600">min</span>
-                </div>
-              </div>
-              <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
-                <p className="text-xs font-medium text-neutral-500">
-                  Avg / session
-                </p>
-                <div className="mt-2 flex items-baseline gap-1.5">
-                  <span className="text-3xl font-bold text-white">
-                    {weeklyAvgMinutes}
-                  </span>
-                  <span className="text-xs text-neutral-600">min</span>
-                </div>
-              </div>
-            </div>
-          )}
         </section>
 
         <div className="h-px w-full bg-neutral-800/60" />
@@ -615,15 +580,12 @@ function ProgressContent() {
               </>
             }
           >
-            {/* Real stat */}
             <div className="flex items-start gap-2.5">
               <span className="mt-1 block h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500" />
               <span className="text-sm leading-relaxed text-neutral-300">
                 This week: <strong className="text-white">{thisWeekCount}/7</strong> sessions completed.
               </span>
             </div>
-
-            {/* Muted example insights */}
             <div className="mt-4 flex flex-col gap-2.5 opacity-40">
               <div className="flex items-start gap-2.5">
                 <span className="mt-1 block h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500/50" />
@@ -649,7 +611,6 @@ function ProgressContent() {
             </div>
             <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
               <ul className="flex flex-col gap-3">
-                {/* Top focus tag */}
                 <li className="flex items-start gap-2.5">
                   <span className="mt-1 block h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500" />
                   <span className="text-sm leading-relaxed text-neutral-300">
@@ -658,35 +619,14 @@ function ProgressContent() {
                       : "No focus tags this week. Tag your sessions to see patterns."}
                   </span>
                 </li>
-                {/* Time invested */}
                 <li className="flex items-start gap-2.5">
                   <span className="mt-1 block h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500" />
                   <span className="text-sm leading-relaxed text-neutral-300">
                     {weeklySessionsWithDuration > 0
-                      ? <>{weeklyTotalMinutes} minutes across {weeklySessionsWithDuration} {weeklySessionsWithDuration === 1 ? "session" : "sessions"} — averaging <strong className="text-white">{weeklyAvgMinutes} min</strong> each.</>
+                      ? <>{weeklyTotalMinutes} minutes across {weeklySessionsWithDuration} {weeklySessionsWithDuration === 1 ? "session" : "sessions"} — averaging <strong className="text-white">{Math.round(weeklyTotalMinutes / weeklySessionsWithDuration)} min</strong> each.</>
                       : "No session durations logged yet. Track your time to see totals."}
                   </span>
                 </li>
-                {/* Best day */}
-                <li className="flex items-start gap-2.5">
-                  <span className="mt-1 block h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500" />
-                  <span className="text-sm leading-relaxed text-neutral-300">
-                    {(() => {
-                      const firstIdx = thisWeekDates.findIndex((d) =>
-                        completedDates.has(d)
-                      );
-                      if (firstIdx === -1)
-                        return "No sessions this week yet. Start one today.";
-                      return <>First session this week: <strong className="text-white">{DAY_LABELS[firstIdx]}</strong>.{" "}
-                        {thisWeekCount >= 4
-                          ? "Strong rhythm — keep protecting it."
-                          : thisWeekCount >= 2
-                            ? "Building momentum. Stay consistent."
-                            : "One session down. Aim for two this week."}</>;
-                    })()}
-                  </span>
-                </li>
-                {/* Coach line */}
                 <li className="flex items-start gap-2.5">
                   <span className="mt-1 block h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500" />
                   <span className="text-sm leading-relaxed text-neutral-300">
@@ -699,26 +639,16 @@ function ProgressContent() {
                           : "Every session counts. Focus on quality over quantity."}
                   </span>
                 </li>
-                {/* Pro-only: rank trend context */}
-                {plan === "pro" && (() => {
-                  const playlist = rankPlaylist;
-                  const filtered = rankSnapshots.filter(
-                    (s) => s.playlist === playlist
-                  );
-                  if (filtered.length < 2) return null;
-                  const latest = filtered[filtered.length - 1];
-                  const prev = filtered[filtered.length - 2];
-                  const ci = getRankIndex(latest.rank);
-                  const pi = getRankIndex(prev.rank);
-                  const diff = ci - pi;
+                {plan === "pro" && latestRank && prevRank && (() => {
+                  const diff = getRankIndex(latestRank.rank) - getRankIndex(prevRank.rank);
                   if (diff === 0) return null;
                   return (
                     <li className="flex items-start gap-2.5">
                       <span className="mt-1 block h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" />
                       <span className="text-sm leading-relaxed text-neutral-300">
                         {diff > 0
-                          ? <>Rank climbed from <strong className="text-white">{prev.rank}</strong> to <strong className="text-white">{latest.rank}</strong> in {playlist}. Training is translating to results.</>
-                          : <>Rank dropped from <strong className="text-white">{prev.rank}</strong> to <strong className="text-white">{latest.rank}</strong> in {playlist}. Stay patient — progress isn&apos;t always linear.</>}
+                          ? <>Rank climbed from <strong className="text-white">{prevRank.rank}</strong> to <strong className="text-white">{latestRank.rank}</strong> in {rankPlaylist}. Training is translating to results.</>
+                          : <>Rank dropped from <strong className="text-white">{prevRank.rank}</strong> to <strong className="text-white">{latestRank.rank}</strong> in {rankPlaylist}. Stay patient — progress isn&apos;t always linear.</>}
                       </span>
                     </li>
                   );
@@ -789,9 +719,6 @@ function ProgressContent() {
 
         {/* ── Next Action ── */}
         <section className="py-10">
-          <h2 className="mb-6 text-sm font-medium text-neutral-500">
-            Next Action
-          </h2>
           {onboarding && (
             <p className="mb-4 text-xs leading-relaxed text-neutral-500">
               {onboarding.goal === "Rank Up"
@@ -827,6 +754,24 @@ function ProgressContent() {
             </Link>
           </div>
         </section>
+
+        <div className="h-px w-full bg-neutral-800/60" />
+
+        {ready && !signedIn && (
+          <section className="py-10">
+            <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5 text-center">
+              <p className="text-sm text-neutral-400">
+                Sign in to sync your data across devices and unlock plan features.
+              </p>
+              <Link
+                href="/login?returnTo=/progress"
+                className="mt-4 inline-flex h-9 items-center justify-center rounded-lg bg-indigo-600 px-5 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
+              >
+                Sign in
+              </Link>
+            </div>
+          </section>
+        )}
 
         <div className="h-px w-full bg-neutral-800/60" />
 
