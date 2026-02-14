@@ -70,10 +70,15 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all paths except static assets and API routes.
-     * This ensures session cookies are refreshed on every page navigation.
-     */
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/",
+    "/login",
+    "/dashboard/:path*",
+    "/training/:path*",
+    "/progress/:path*",
+    "/settings/:path*",
+    "/pricing",
+    "/upgrade/:path*",
+    "/play/:path*",
+    "/profile/:path*",
   ],
 };
