@@ -11,6 +11,9 @@ import { fetchUserProfile, startTrial } from "@/src/lib/user-plan";
 import type { UserProfile } from "@/src/lib/user-plan";
 import { fetchTotalUnreadCount } from "@/src/lib/supabase/matchmaking";
 import { canStartTrial, isTrialActive, trialDaysRemaining } from "@/src/lib/trial";
+import { fetchOnboardingStatus, fetchWeeklyGoal, saveWeeklyGoal } from "@/src/lib/onboarding";
+import { fetchReminderSettings, shouldShowReminder } from "@/src/lib/reminders";
+import { getCompletedDaysLastNDays, computeConsistencyScore } from "@/src/lib/consistency";
 import type { PlanTier } from "@/src/lib/weekly-plan";
 import {
   getCompletedDates,
@@ -54,6 +57,15 @@ export default function Dashboard() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [billingLabel, setBillingLabel] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [focusGoal, setFocusGoal] = useState<string | null>(null);
+  const [focusPlaylist, setFocusPlaylist] = useState<string | null>(null);
+  const [weeklyGoal, setWeeklyGoal] = useState(3);
+  const [weeklyProgress, setWeeklyProgress] = useState(0);
+  const [consistencyScore, setConsistencyScore] = useState(0);
+  const [goalPickerOpen, setGoalPickerOpen] = useState(false);
+  const [goalSaving, setGoalSaving] = useState(false);
+  const [reminderNudge, setReminderNudge] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -63,10 +75,33 @@ export default function Dashboard() {
         setUserEmail(user?.email ?? null);
         setUserId(user?.id ?? null);
         if (user) {
+          // Check onboarding — redirect if not completed
+          fetchOnboardingStatus().then((ob) => {
+            if (!ob.onboarding_completed) {
+              router.replace("/onboarding");
+              return;
+            }
+            setFocusGoal(ob.focus_goal);
+            setFocusPlaylist(ob.focus_playlist);
+          });
+          // Check for welcome param
+          const params = new URLSearchParams(window.location.search);
+          if (params.get("welcome") === "1") {
+            setShowWelcome(true);
+            window.history.replaceState({}, "", "/dashboard");
+          }
           syncCompletions().then(syncFromStorage);
           fetchUserProfile().then((p) => {
             setUserProfile(p);
             setUserPlan(p.plan);
+          });
+          fetchWeeklyGoal().then(setWeeklyGoal);
+          fetchReminderSettings().then((s) => {
+            const show = shouldShowReminder(
+              { enabled: s.reminder_enabled, days: s.reminder_days },
+              false // trainedToday not known yet; will update via syncFromStorage
+            );
+            setReminderNudge(show);
           });
           fetchTotalUnreadCount().then(setUnreadCount);
           fetch("/api/stripe/status")
@@ -105,6 +140,13 @@ export default function Dashboard() {
     });
     setCompletedDays(daySet);
     setStreak(computeStreaks().current);
+    // Weekly progress = completed days this week
+    let wp = 0;
+    weekDates.forEach((d) => { if (dates.has(d)) wp++; });
+    setWeeklyProgress(wp);
+    // Consistency score (last 14 days)
+    const count14 = getCompletedDaysLastNDays(dates, 14);
+    setConsistencyScore(computeConsistencyScore(count14, 14));
   }, [weekDates]);
 
   useEffect(() => {
@@ -207,14 +249,58 @@ export default function Dashboard() {
             Here&apos;s where you are. Keep showing up — that&apos;s all it
             takes.
           </p>
-          {onboarding && !obJustSaved && (
+          {focusGoal && focusPlaylist && (
             <p className="mt-3 text-xs text-neutral-500">
-              Goal: <span className="text-neutral-400">{onboarding.goal}</span>
+              Focus: <span className="text-neutral-400">{focusGoal}</span>
               {" "}&middot;{" "}
-              Playlist: <span className="text-neutral-400">{onboarding.playlist}</span>
+              <span className="text-neutral-400">{focusPlaylist}</span>
+              {" "}&middot;{" "}
+              <Link href="/onboarding" className="text-indigo-400 hover:text-indigo-300">
+                Change
+              </Link>
             </p>
           )}
         </section>
+
+        {/* ── Reminder Nudge ── */}
+        {reminderNudge && !trainedToday && (
+          <section className="pb-10">
+            <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-sm text-neutral-400">
+                  Reminder: quick session today keeps your goal on track.
+                </p>
+                <Link
+                  href={`/training?plan=${userPlan}`}
+                  className="shrink-0 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
+                >
+                  Start Session
+                </Link>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ── Welcome Banner ── */}
+        {showWelcome && (
+          <section className="pb-10">
+            <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/[0.03] p-5">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-indigo-300">
+                    Welcome — your plan is set. Ready for your first session?
+                  </p>
+                </div>
+                <Link
+                  href={`/training?plan=${userPlan}`}
+                  className="shrink-0 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
+                >
+                  Start Session
+                </Link>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* ── Onboarding ── */}
         {onboarding === null && (
@@ -388,6 +474,100 @@ export default function Dashboard() {
                   ? "You're building momentum. Stay consistent."
                   : "Solid consistency. Keep it going."}
             </p>
+          </div>
+        </section>
+
+        <div className="h-px w-full bg-neutral-800/60" />
+
+        {/* ── Weekly Goal + Consistency ── */}
+        <section className="py-10">
+          <div className="grid grid-cols-2 gap-4">
+            {/* Weekly Goal */}
+            <div className={`rounded-xl border p-5 ${
+              weeklyProgress >= weeklyGoal
+                ? "border-indigo-500/30 bg-indigo-500/[0.05]"
+                : "border-neutral-800/60 bg-[#0c0c10]"
+            }`}>
+              <p className="text-[11px] font-medium text-neutral-500">
+                Weekly Goal
+              </p>
+              <div className="mt-2 flex items-baseline gap-1.5">
+                <span className={`text-2xl font-bold ${
+                  weeklyProgress >= weeklyGoal ? "text-indigo-300" : "text-white"
+                }`}>
+                  {weeklyProgress}
+                </span>
+                <span className="text-sm text-neutral-500">/ {weeklyGoal}</span>
+              </div>
+              {weeklyProgress >= weeklyGoal ? (
+                <p className="mt-2 text-xs text-indigo-400">Goal reached</p>
+              ) : (
+                <p className="mt-2 text-xs text-neutral-600">
+                  {weeklyGoal - weeklyProgress} more day{weeklyGoal - weeklyProgress === 1 ? "" : "s"} to go
+                </p>
+              )}
+              {!goalPickerOpen ? (
+                <button
+                  onClick={() => setGoalPickerOpen(true)}
+                  className="mt-3 text-[11px] text-indigo-400 transition-colors hover:text-indigo-300"
+                >
+                  Change goal
+                </button>
+              ) : (
+                <div className="mt-3 flex items-center gap-2">
+                  {([3, 5, 7] as const).map((d) => (
+                    <button
+                      key={d}
+                      disabled={goalSaving}
+                      onClick={async () => {
+                        setGoalSaving(true);
+                        const ok = await saveWeeklyGoal(d);
+                        if (ok) setWeeklyGoal(d);
+                        setGoalSaving(false);
+                        setGoalPickerOpen(false);
+                      }}
+                      className={`rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                        weeklyGoal === d
+                          ? "border-indigo-500/40 bg-indigo-600/20 text-indigo-300"
+                          : "border-neutral-800/60 bg-[#0c0c10] text-neutral-500 hover:border-neutral-700 hover:text-neutral-400"
+                      }`}
+                    >
+                      {d}d
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Consistency Score */}
+            <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
+              <p className="text-[11px] font-medium text-neutral-500">
+                Consistency Score
+              </p>
+              {userPlan === "free" ? (
+                <div className="mt-3">
+                  <p className="text-sm text-neutral-600">—</p>
+                  <p className="mt-2 text-[11px] text-neutral-600">
+                    <Link href="/pricing" className="text-indigo-400 hover:text-indigo-300">
+                      Starter+
+                    </Link>{" "}
+                    to unlock
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="mt-2 flex items-baseline gap-1.5">
+                    <span className={`text-2xl font-bold ${
+                      consistencyScore >= 70 ? "text-indigo-300" : "text-white"
+                    }`}>
+                      {consistencyScore}
+                    </span>
+                    <span className="text-sm text-neutral-500">%</span>
+                  </div>
+                  <p className="mt-2 text-xs text-neutral-600">Last 14 days</p>
+                </>
+              )}
+            </div>
           </div>
         </section>
 
@@ -817,7 +997,17 @@ export default function Dashboard() {
               href={`/training?plan=${userPlan}`}
               className="flex h-11 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white hover:bg-indigo-500"
             >
-              {trainedToday ? "Review Training" : "Go to Training"}
+              {trainedToday
+                ? "Review Training"
+                : focusGoal === "Mechanics"
+                  ? "Start Mechanics Session"
+                  : focusGoal === "Game Sense"
+                    ? "Start Review Session"
+                    : focusGoal === "Consistency"
+                      ? "Keep the streak alive"
+                      : focusGoal === "Rank Up"
+                        ? "Start Ranked Prep Session"
+                        : "Go to Training"}
             </Link>
             <Link
               href={`/training/plan?plan=${userPlan}`}

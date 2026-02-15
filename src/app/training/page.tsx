@@ -26,6 +26,7 @@ import { TRAINING_PROGRAMS, getBlocksBySection } from "@/src/lib/trainingProgram
 import type { TrainingBlock } from "@/src/lib/trainingPrograms";
 import PremiumPreview from "@/src/components/PremiumPreview";
 import { fetchUserPlan } from "@/src/lib/user-plan";
+import { fetchOnboardingStatus } from "@/src/lib/onboarding";
 import { createClient } from "@/src/lib/supabase/client";
 import { getDrillById, getLocalQueue, setLocalQueue, QUEUE_LIMITS } from "@/src/lib/drill-library";
 import { syncDrillQueue, replaceQueue } from "@/src/lib/supabase/sync-drills";
@@ -670,11 +671,24 @@ function LockedTierPreview({ tier }: { tier: "starter" | "pro" }) {
   );
 }
 
+const GOAL_SECTION_MAP: Record<string, string> = {
+  "Mechanics": "Mechanics",
+  "Game Sense": "Game Sense / Review",
+  "Rank Up": "Mechanics",
+  "Consistency": "Mechanics",
+};
+
 function TrainingContent() {
   const [plan, setPlan] = useState<Plan>("free");
+  const [focusGoal, setFocusGoal] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUserPlan().then((dbPlan) => setPlan(dbPlan as Plan));
+    fetchOnboardingStatus().then((ob) => {
+      if (ob.onboarding_completed && ob.focus_goal) {
+        setFocusGoal(ob.focus_goal);
+      }
+    });
   }, []);
 
   const program = TRAINING_PROGRAMS[plan];
@@ -909,11 +923,17 @@ function TrainingContent() {
               </div>
 
               <div className="flex flex-col gap-4">
-                {sections.map(({ section, blocks }) => (
+                {sections.map(({ section, blocks }) => {
+                  const isRecommended = focusGoal != null && GOAL_SECTION_MAP[focusGoal] === section;
+                  return (
                   <details
                     key={section}
                     open
-                    className="group rounded-xl border border-neutral-800/60 bg-[#0c0c10]"
+                    className={`group rounded-xl border bg-[#0c0c10] ${
+                      isRecommended
+                        ? "border-indigo-500/30"
+                        : "border-neutral-800/60"
+                    }`}
                   >
                     <summary className="flex cursor-pointer items-center justify-between px-5 py-4 select-none">
                       <div className="flex items-center gap-3">
@@ -923,6 +943,11 @@ function TrainingContent() {
                         <span className="rounded-full bg-neutral-800 px-2 py-0.5 text-[10px] font-medium text-neutral-400">
                           {blocks.filter((b) => blocksDone[b.id]).length}/{blocks.length}
                         </span>
+                        {isRecommended && (
+                          <span className="rounded-full bg-indigo-600/20 px-2 py-0.5 text-[10px] font-medium text-indigo-400">
+                            Recommended for your focus
+                          </span>
+                        )}
                       </div>
                       <svg
                         className="h-4 w-4 text-neutral-600 transition-transform group-open:rotate-180"
@@ -950,7 +975,8 @@ function TrainingContent() {
                       ))}
                     </div>
                   </details>
-                ))}
+                  );
+                })}
               </div>
 
               <p className="mt-4 text-center text-xs text-neutral-600">

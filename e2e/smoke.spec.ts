@@ -106,6 +106,15 @@ test.describe("Messages page", () => {
   });
 });
 
+test.describe("Onboarding page", () => {
+  test("redirects unauthenticated users to /login", async ({ page }) => {
+    const response = await page.goto("/onboarding");
+    expect(page.url()).toContain("/login");
+    expect(page.url()).toContain("returnTo");
+    expect(response?.status()).toBeLessThan(400);
+  });
+});
+
 test.describe("Homepage", () => {
   test("shows Sign in link for unauthenticated users", async ({ page }) => {
     await page.goto("/");
