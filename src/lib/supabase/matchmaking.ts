@@ -196,12 +196,14 @@ export async function fetchThreads(
       other_user_name:
         (t.profiles as { display_name?: string } | null)?.display_name ??
         "Player",
+      unread_count: (t as Record<string, number>).starter_unread_count ?? 0,
     })),
     ...((receiverThreads ?? []) as Record<string, unknown>[]).map((t) => ({
       ...t,
       other_user_name:
         (t.profiles as { display_name?: string } | null)?.display_name ??
         "Player",
+      unread_count: (t as Record<string, number>).receiver_unread_count ?? 0,
     })),
   ] as MessageThread[];
 
@@ -258,6 +260,50 @@ export async function fetchMessages(threadId: string): Promise<Message[]> {
   return (data ?? []) as Message[];
 }
 
+/** Accept a pending thread request. Only the receiver (post owner) can accept. */
+export async function acceptThread(threadId: string): Promise<boolean> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { error } = await supabase
+    .from("message_threads")
+    .update({ status: "accepted", responded_at: new Date().toISOString() })
+    .eq("id", threadId)
+    .eq("receiver_id", user.id)
+    .eq("status", "pending");
+
+  if (error) {
+    console.warn("[aerix] acceptThread failed:", error);
+    return false;
+  }
+  return true;
+}
+
+/** Decline a pending thread request. Only the receiver (post owner) can decline. */
+export async function declineThread(threadId: string): Promise<boolean> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const { error } = await supabase
+    .from("message_threads")
+    .update({ status: "declined", responded_at: new Date().toISOString() })
+    .eq("id", threadId)
+    .eq("receiver_id", user.id)
+    .eq("status", "pending");
+
+  if (error) {
+    console.warn("[aerix] declineThread failed:", error);
+    return false;
+  }
+  return true;
+}
+
 /** Send a message in a thread. Includes server-side cooldown check. */
 export async function sendMessage(
   threadId: string,
@@ -268,6 +314,18 @@ export async function sendMessage(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
+
+  // Check thread is accepted before allowing messages
+  const { data: threadCheck } = await supabase
+    .from("message_threads")
+    .select("status")
+    .eq("id", threadId)
+    .single();
+
+  if (!threadCheck || threadCheck.status !== "accepted") {
+    console.warn("[aerix] sendMessage blocked: thread not accepted");
+    return null;
+  }
 
   // Server-side cooldown check
   const onCooldown = await isMessageCooldownActive(
@@ -294,14 +352,89 @@ export async function sendMessage(
     return null;
   }
 
-  // Update thread's last_message fields
+  // Fetch thread to determine which unread counter to increment
+  const { data: thread } = await supabase
+    .from("message_threads")
+    .select("starter_id, receiver_id, starter_unread_count, receiver_unread_count")
+    .eq("id", threadId)
+    .single();
+
+  const updateFields: Record<string, unknown> = {
+    last_message: body.trim().slice(0, 120),
+    last_message_at: new Date().toISOString(),
+  };
+
+  if (thread) {
+    if (user.id === thread.starter_id) {
+      updateFields.receiver_unread_count = (thread.receiver_unread_count ?? 0) + 1;
+    } else {
+      updateFields.starter_unread_count = (thread.starter_unread_count ?? 0) + 1;
+    }
+  }
+
   await supabase
     .from("message_threads")
-    .update({
-      last_message: body.trim().slice(0, 100),
-      last_message_at: new Date().toISOString(),
-    })
+    .update(updateFields)
     .eq("id", threadId);
 
   return data as Message;
+}
+
+/** Mark a thread as read for the current user. */
+export async function markThreadRead(threadId: string): Promise<void> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { data: thread } = await supabase
+    .from("message_threads")
+    .select("starter_id")
+    .eq("id", threadId)
+    .single();
+
+  if (!thread) return;
+
+  const col =
+    user.id === thread.starter_id
+      ? "starter_unread_count"
+      : "receiver_unread_count";
+
+  await supabase
+    .from("message_threads")
+    .update({ [col]: 0 })
+    .eq("id", threadId);
+}
+
+/** Get total unread message count across all threads for the current user. */
+export async function fetchTotalUnreadCount(): Promise<number> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return 0;
+
+  // Threads where user is starter
+  const { data: starterThreads } = await supabase
+    .from("message_threads")
+    .select("starter_unread_count")
+    .eq("starter_id", user.id)
+    .gt("starter_unread_count", 0);
+
+  // Threads where user is receiver
+  const { data: receiverThreads } = await supabase
+    .from("message_threads")
+    .select("receiver_unread_count")
+    .eq("receiver_id", user.id)
+    .gt("receiver_unread_count", 0);
+
+  let total = 0;
+  for (const t of starterThreads ?? []) {
+    total += (t as Record<string, number>).starter_unread_count ?? 0;
+  }
+  for (const t of receiverThreads ?? []) {
+    total += (t as Record<string, number>).receiver_unread_count ?? 0;
+  }
+  return total;
 }

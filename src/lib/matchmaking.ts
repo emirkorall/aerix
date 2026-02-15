@@ -19,6 +19,8 @@ export interface LfgPost {
   display_name?: string;
 }
 
+export type ThreadStatus = "pending" | "accepted" | "declined";
+
 export interface MessageThread {
   id: string;
   post_id: string;
@@ -28,6 +30,13 @@ export interface MessageThread {
   last_message?: string;
   last_message_at?: string;
   other_user_name?: string;
+  starter_unread_count?: number;
+  receiver_unread_count?: number;
+  /** Computed for current user */
+  unread_count?: number;
+  status?: ThreadStatus;
+  requested_at?: string;
+  responded_at?: string;
 }
 
 export interface Message {

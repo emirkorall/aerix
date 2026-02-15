@@ -7,7 +7,10 @@ import { createClient } from "@/src/lib/supabase/client";
 import { isSupabaseConfigured } from "@/src/lib/supabase/validate";
 import { syncCompletions } from "@/src/lib/supabase/sync-completions";
 import SupabaseNotConfigured from "@/src/components/SupabaseNotConfigured";
-import { fetchUserPlan } from "@/src/lib/user-plan";
+import { fetchUserProfile, startTrial } from "@/src/lib/user-plan";
+import type { UserProfile } from "@/src/lib/user-plan";
+import { fetchTotalUnreadCount } from "@/src/lib/supabase/matchmaking";
+import { canStartTrial, isTrialActive, trialDaysRemaining } from "@/src/lib/trial";
 import type { PlanTier } from "@/src/lib/weekly-plan";
 import {
   getCompletedDates,
@@ -45,9 +48,12 @@ export default function Dashboard() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [userPlan, setUserPlan] = useState<PlanTier>("free");
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [trialStarting, setTrialStarting] = useState(false);
   const [configError, setConfigError] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const [billingLabel, setBillingLabel] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
   const router = useRouter();
 
   useEffect(() => {
@@ -58,7 +64,11 @@ export default function Dashboard() {
         setUserId(user?.id ?? null);
         if (user) {
           syncCompletions().then(syncFromStorage);
-          fetchUserPlan().then(setUserPlan);
+          fetchUserProfile().then((p) => {
+            setUserProfile(p);
+            setUserPlan(p.plan);
+          });
+          fetchTotalUnreadCount().then(setUnreadCount);
           fetch("/api/stripe/status")
             .then((r) => r.ok ? r.json() : null)
             .then((data) => {
@@ -149,6 +159,17 @@ export default function Dashboard() {
               className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
             >
               Settings
+            </Link>
+            <Link
+              href="/messages"
+              className="relative text-sm text-neutral-400 transition-colors hover:text-white"
+            >
+              Messages
+              {unreadCount > 0 && (
+                <span className="absolute -top-1.5 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-indigo-600 px-1 text-[9px] font-bold text-white">
+                  {unreadCount}
+                </span>
+              )}
             </Link>
             <Link
               href="/library"
@@ -271,6 +292,78 @@ export default function Dashboard() {
               <p className="text-sm font-medium text-indigo-300">
                 Saved. Let&apos;s get a clean week in.
               </p>
+            </div>
+          </section>
+        )}
+
+        {/* ── Trial Banner ── */}
+        {userProfile && isTrialActive(userProfile) && (
+          <section className="pb-10">
+            <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/[0.03] p-5">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-indigo-300">
+                    Starter trial ends in {trialDaysRemaining(userProfile)} day{trialDaysRemaining(userProfile) === 1 ? "" : "s"}
+                  </p>
+                  <p className="mt-0.5 text-xs text-neutral-500">
+                    Enjoying the extra features? Keep them after your trial.
+                  </p>
+                </div>
+                <Link
+                  href="/pricing"
+                  className="shrink-0 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
+                >
+                  View Plans
+                </Link>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ── Trial Expired Note ── */}
+        {userProfile && userProfile.trial_used && userPlan === "free" && !userProfile.stripe_subscription_id && (
+          <section className="pb-10">
+            <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
+              <p className="text-sm text-neutral-400">
+                Trial ended — you can keep training on Free or{" "}
+                <Link href="/pricing" className="text-indigo-400 hover:text-indigo-300">
+                  upgrade anytime
+                </Link>.
+              </p>
+            </div>
+          </section>
+        )}
+
+        {/* ── Start Trial CTA ── */}
+        {userProfile && canStartTrial(userProfile) && (
+          <section className="pb-10">
+            <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-white">
+                    Try Starter free for 7 days
+                  </p>
+                  <p className="mt-0.5 text-xs text-neutral-500">
+                    Unlock more training blocks, focus tags, and insights.
+                  </p>
+                </div>
+                <button
+                  disabled={trialStarting}
+                  onClick={async () => {
+                    setTrialStarting(true);
+                    const ok = await startTrial();
+                    if (ok) {
+                      const p = await fetchUserProfile();
+                      setUserProfile(p);
+                      setUserPlan(p.plan);
+                    }
+                    setTrialStarting(false);
+                  }}
+                  className="shrink-0 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500 disabled:opacity-50"
+                >
+                  {trialStarting ? "Starting…" : "Start Trial"}
+                </button>
+              </div>
             </div>
           </section>
         )}
@@ -618,6 +711,59 @@ export default function Dashboard() {
 
         <section className="py-10">
           <h2 className="mb-6 text-sm font-medium text-neutral-500">
+            Messages
+          </h2>
+          <Link
+            href="/messages"
+            className="flex items-center gap-4 rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5 transition-colors hover:border-neutral-700/60"
+          >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-600/15">
+              {unreadCount > 0 ? (
+                <span className="text-xs font-bold text-indigo-400">
+                  {unreadCount}
+                </span>
+              ) : (
+                <svg
+                  className="h-4 w-4 text-indigo-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"
+                  />
+                </svg>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-white">
+                {unreadCount > 0
+                  ? `You have ${unreadCount} unread message${unreadCount === 1 ? "" : "s"}`
+                  : "Inbox is clear"}
+              </p>
+              <p className="mt-0.5 text-xs text-neutral-500">
+                {unreadCount > 0 ? "Open Inbox" : "No new messages right now."}
+              </p>
+            </div>
+            <svg
+              className="h-4 w-4 shrink-0 text-neutral-700"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+            </svg>
+          </Link>
+        </section>
+
+        <div className="h-px w-full bg-neutral-800/60" />
+
+        <section className="py-10">
+          <h2 className="mb-6 text-sm font-medium text-neutral-500">
             Streak Protection
           </h2>
           <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6">
@@ -721,7 +867,7 @@ export default function Dashboard() {
                         ? "bg-indigo-600/15 text-indigo-400"
                         : "bg-neutral-800 text-neutral-400"
                   }`}>
-                    {userPlan}
+                    {userPlan}{userProfile && isTrialActive(userProfile) ? " (Trial)" : ""}
                   </span>
                   {userPlan === "free" ? (
                     <Link

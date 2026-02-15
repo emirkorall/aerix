@@ -92,12 +92,28 @@ export default function MessagesPage() {
                     </span>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-white">
-                      {thread.other_user_name ?? "Player"}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="truncate text-sm font-medium text-white">
+                        {thread.other_user_name ?? "Player"}
+                      </p>
+                      {thread.status === "pending" && (
+                        <span className="shrink-0 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-400">
+                          Pending
+                        </span>
+                      )}
+                      {thread.status === "declined" && (
+                        <span className="shrink-0 rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-medium text-red-400">
+                          Declined
+                        </span>
+                      )}
+                    </div>
                     {thread.last_message ? (
                       <p className="mt-0.5 truncate text-[11px] text-neutral-500">
                         {thread.last_message}
+                      </p>
+                    ) : thread.status === "pending" ? (
+                      <p className="mt-0.5 text-[11px] text-amber-500/60">
+                        Waiting for response
                       </p>
                     ) : (
                       <p className="mt-0.5 text-[11px] text-neutral-600">
@@ -105,11 +121,18 @@ export default function MessagesPage() {
                       </p>
                     )}
                   </div>
-                  {thread.last_message_at && (
-                    <span className="shrink-0 text-[10px] text-neutral-600">
-                      {timeAgo(thread.last_message_at)}
-                    </span>
-                  )}
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    {thread.last_message_at && (
+                      <span className="text-[10px] text-neutral-600">
+                        {timeAgo(thread.last_message_at)}
+                      </span>
+                    )}
+                    {(thread.unread_count ?? 0) > 0 && (
+                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-indigo-600 px-1.5 text-[10px] font-bold text-white">
+                        {thread.unread_count}
+                      </span>
+                    )}
+                  </div>
                 </Link>
               ))}
             </div>

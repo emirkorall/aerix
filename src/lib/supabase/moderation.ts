@@ -5,8 +5,7 @@ export type ReportTargetType = "post" | "message" | "user";
 export const REPORT_REASONS = [
   "Spam",
   "Harassment",
-  "Inappropriate content",
-  "Fake rank / misleading",
+  "Scam",
   "Other",
 ] as const;
 

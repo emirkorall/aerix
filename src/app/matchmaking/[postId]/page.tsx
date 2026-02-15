@@ -14,6 +14,7 @@ import {
   submitReport,
   fetchBlockedUserIds,
   blockUser,
+  unblockUser,
 } from "@/src/lib/supabase/moderation";
 import type { ReportReason } from "@/src/lib/supabase/moderation";
 
@@ -147,14 +148,20 @@ export default function PostDetailPage() {
           ) : isBlocked ? (
             <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6 text-center">
               <p className="text-sm text-neutral-500">
-                You have blocked this user.
+                You blocked this player.
               </p>
-              <Link
-                href="/matchmaking"
-                className="mt-4 inline-block text-xs font-medium text-indigo-400 hover:text-indigo-300"
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!post) return;
+                  await unblockUser(post.user_id);
+                  setIsBlocked(false);
+                  showToast("User unblocked.");
+                }}
+                className="mt-4 inline-block rounded-lg border border-neutral-800/60 px-3 py-1.5 text-xs font-medium text-neutral-400 transition-colors hover:border-neutral-700 hover:text-white"
               >
-                Back to feed &rarr;
-              </Link>
+                Unblock
+              </button>
             </div>
           ) : (
             <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6">
@@ -215,7 +222,7 @@ export default function PostDetailPage() {
                     disabled={contacting}
                     className="flex h-11 w-full items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:opacity-50"
                   >
-                    {contacting ? "Opening thread..." : "Send a Message"}
+                    {contacting ? "Sending request..." : "Request to Play"}
                   </button>
                 ) : (
                   <div className="text-center">

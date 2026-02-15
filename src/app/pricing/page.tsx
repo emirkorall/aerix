@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { fetchUserProfile, startTrial } from "@/src/lib/user-plan";
+import type { UserProfile } from "@/src/lib/user-plan";
+import { canStartTrial } from "@/src/lib/trial";
 
 const check = (
   <svg className="h-4 w-4 shrink-0 text-neutral-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -39,7 +42,13 @@ function Feature({ icon, children }: { icon: React.ReactNode; children: React.Re
 
 export default function Pricing() {
   const [region, setRegion] = useState<Region>("eu");
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [trialStarting, setTrialStarting] = useState(false);
   const p = prices[region];
+
+  useEffect(() => {
+    fetchUserProfile().then(setProfile).catch(() => {});
+  }, []);
 
   return (
     <main className="min-h-screen bg-[#060608] text-white">
@@ -138,10 +147,27 @@ export default function Pricing() {
 
             <Link
               href="/upgrade?plan=starter"
-              className="mb-8 flex h-10 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+              className="mb-2 flex h-10 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
             >
               Subscribe
             </Link>
+            {profile && canStartTrial(profile) && (
+              <button
+                disabled={trialStarting}
+                onClick={async () => {
+                  setTrialStarting(true);
+                  const ok = await startTrial();
+                  if (ok) {
+                    window.location.href = "/dashboard";
+                  }
+                  setTrialStarting(false);
+                }}
+                className="mb-6 flex h-9 w-full items-center justify-center rounded-lg border border-indigo-500/30 text-xs font-medium text-indigo-300 transition-colors hover:border-indigo-500/50 hover:text-indigo-200 disabled:opacity-50"
+              >
+                {trialStarting ? "Starting…" : "Try free for 7 days"}
+              </button>
+            )}
+            {!(profile && canStartTrial(profile)) && <div className="mb-6" />}
 
             <ul className="flex flex-col gap-3 text-sm text-neutral-400">
               <Feature icon={check}>Everything in Free</Feature>
