@@ -115,6 +115,26 @@ test.describe("Onboarding page", () => {
   });
 });
 
+test.describe("Season Updates page", () => {
+  test("loads and shows Season Updates heading", async ({ page }) => {
+    await page.goto("/updates");
+    await expect(
+      page.getByRole("heading", { name: /Stay current/i })
+    ).toBeVisible();
+    expect(page.url()).toContain("/updates");
+  });
+});
+
+test.describe("Training Packs page", () => {
+  test("loads and shows Training Packs heading", async ({ page }) => {
+    await page.goto("/packs");
+    await expect(
+      page.getByRole("heading", { name: /Training Packs/i })
+    ).toBeVisible();
+    expect(page.url()).toContain("/packs");
+  });
+});
+
 test.describe("Homepage", () => {
   test("shows Sign in link for unauthenticated users", async ({ page }) => {
     await page.goto("/");

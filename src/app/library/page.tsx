@@ -166,6 +166,15 @@ export default function LibraryPage() {
           <p className="mt-4 text-base leading-relaxed text-neutral-400">
             Save drills you like. Queue up your next session.
           </p>
+          <p className="mt-3 text-xs text-neutral-600">
+            Looking for curated bundles?{" "}
+            <Link
+              href="/packs"
+              className="text-indigo-400 hover:text-indigo-300"
+            >
+              Browse Training Packs &rarr;
+            </Link>
+          </p>
           {ready && !signedIn && (
             <p className="mt-3 text-xs text-neutral-600">
               Preview mode &mdash; local only.{" "}

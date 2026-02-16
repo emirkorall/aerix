@@ -803,8 +803,92 @@ export default function Dashboard() {
           <h2 className="mb-6 text-sm font-medium text-neutral-500">
             Training Library
           </h2>
+          <div className="flex flex-col gap-3">
+            <Link
+              href="/library"
+              className="flex items-center gap-4 rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5 transition-colors hover:border-neutral-700/60"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-600/15">
+                <svg
+                  className="h-4 w-4 text-indigo-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"
+                  />
+                </svg>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-white">
+                  Open Library
+                </p>
+                <p className="mt-0.5 text-xs text-neutral-500">
+                  Save drills and build your next session.
+                </p>
+              </div>
+              <svg
+                className="h-4 w-4 shrink-0 text-neutral-700"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+              </svg>
+            </Link>
+            <Link
+              href="/packs"
+              className="flex items-center gap-4 rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5 transition-colors hover:border-neutral-700/60"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-600/15">
+                <svg
+                  className="h-4 w-4 text-indigo-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M6.429 9.75 2.25 12l4.179 2.25m0-4.5 5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L12 12.75 6.429 9.75m11.142 0 4.179 2.25-9.75 5.25-9.75-5.25 4.179-2.25"
+                  />
+                </svg>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-white">
+                  Training Packs
+                </p>
+                <p className="mt-0.5 text-xs text-neutral-500">
+                  Curated drill bundles for specific skills.
+                </p>
+              </div>
+              <svg
+                className="h-4 w-4 shrink-0 text-neutral-700"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+              </svg>
+            </Link>
+          </div>
+        </section>
+
+        <div className="h-px w-full bg-neutral-800/60" />
+
+        <section className="py-10">
+          <h2 className="mb-6 text-sm font-medium text-neutral-500">
+            Season Updates
+          </h2>
           <Link
-            href="/library"
+            href="/updates"
             className="flex items-center gap-4 rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5 transition-colors hover:border-neutral-700/60"
           >
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-600/15">
@@ -818,16 +902,16 @@ export default function Dashboard() {
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"
+                  d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 0 1-2.25 2.25M16.5 7.5V18a2.25 2.25 0 0 0 2.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 0 0 2.25 2.25h13.5M6 7.5h3v3H6V7.5Z"
                 />
               </svg>
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-white">
-                Open Library
+                Season Updates
               </p>
               <p className="mt-0.5 text-xs text-neutral-500">
-                Save drills and build your next session.
+                Patch notes, meta shifts, and what to train next.
               </p>
             </div>
             <svg

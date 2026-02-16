@@ -823,7 +823,13 @@ function TrainingContent() {
               href="/library"
               className="text-xs text-neutral-500 hover:text-neutral-300"
             >
-              Build a custom session in Library &rarr;
+              Library &rarr;
+            </Link>
+            <Link
+              href="/packs"
+              className="text-xs text-neutral-500 hover:text-neutral-300"
+            >
+              Training Packs &rarr;
             </Link>
           </div>
         </section>
