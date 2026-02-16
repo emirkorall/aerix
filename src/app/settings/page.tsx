@@ -17,6 +17,10 @@ import {
   ALL_DAYS,
 } from "@/src/lib/reminders";
 import type { WeekdayKey } from "@/src/lib/reminders";
+import {
+  fetchPublicProfileSettings,
+  savePublicProfile,
+} from "@/src/lib/supabase/publicProfile";
 
 const RESET_KEYS = [
   "aerix.onboarding",
@@ -41,6 +45,11 @@ export default function SettingsPage() {
   const [reminderTime, setReminderTime] = useState("18:00");
   const [reminderSaved, setReminderSaved] = useState(false);
   const [reminderSaving, setReminderSaving] = useState(false);
+  const [profileUsername, setProfileUsername] = useState("");
+  const [profileEnabled, setProfileEnabled] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
 
   useEffect(() => {
     const ob = getOnboarding();
@@ -54,6 +63,12 @@ export default function SettingsPage() {
       setReminderEnabled(s.reminder_enabled);
       setReminderDays((s.reminder_days ?? []) as WeekdayKey[]);
       if (s.reminder_time) setReminderTime(s.reminder_time);
+    });
+    fetchPublicProfileSettings().then((s) => {
+      if (s) {
+        setProfileUsername(s.username ?? "");
+        setProfileEnabled(s.public_profile_enabled);
+      }
     });
   }, []);
 
@@ -327,6 +342,106 @@ export default function SettingsPage() {
             <p className="mt-3 text-[11px] text-neutral-600">
               This is an in-app reminder for now. We&apos;ll add notifications later.
             </p>
+          </div>
+        </section>
+
+        <div className="h-px w-full bg-neutral-800/60" />
+
+        {/* ── Public Profile ── */}
+        <section className="py-10">
+          <h2 className="mb-6 text-sm font-medium text-neutral-500">
+            Public Profile
+          </h2>
+          <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6">
+            {/* Enable toggle */}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-white">Enable public profile</p>
+                <p className="mt-0.5 text-xs text-neutral-600">
+                  Share your progress page with anyone.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setProfileEnabled(!profileEnabled);
+                  setProfileSaved(false);
+                  setProfileError(null);
+                }}
+                className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+                  profileEnabled ? "bg-indigo-600" : "bg-neutral-700"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+                    profileEnabled ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+
+            {profileEnabled && (
+              <div className="mt-5">
+                <label
+                  htmlFor="profile-username"
+                  className="mb-1.5 block text-[11px] font-medium text-neutral-400"
+                >
+                  Username
+                </label>
+                <input
+                  id="profile-username"
+                  type="text"
+                  value={profileUsername}
+                  onChange={(e) => {
+                    setProfileUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""));
+                    setProfileSaved(false);
+                    setProfileError(null);
+                  }}
+                  maxLength={20}
+                  placeholder="your_username"
+                  className="w-full rounded-lg border border-neutral-800/60 bg-[#060608] px-3 py-2.5 text-sm text-white outline-none focus:border-neutral-700"
+                />
+                <p className="mt-1.5 text-[11px] text-neutral-600">
+                  3-20 characters, lowercase letters, numbers, and underscores only.
+                </p>
+                {profileUsername.length >= 3 && (
+                  <p className="mt-2 text-[11px] text-neutral-500">
+                    Preview:{" "}
+                    <span className="text-indigo-400">/u/{profileUsername}</span>
+                  </p>
+                )}
+              </div>
+            )}
+
+            {profileError && (
+              <p className="mt-3 text-xs text-red-400">{profileError}</p>
+            )}
+
+            <button
+              disabled={profileSaving}
+              onClick={async () => {
+                if (profileEnabled && !/^[a-z0-9_]{3,20}$/.test(profileUsername)) {
+                  setProfileError("Username must be 3-20 characters (letters, numbers, _).");
+                  return;
+                }
+                setProfileSaving(true);
+                setProfileError(null);
+                const result = await savePublicProfile(profileUsername, profileEnabled);
+                if (result.ok) {
+                  setProfileSaved(true);
+                } else {
+                  setProfileError(result.error ?? "Failed to save");
+                }
+                setProfileSaving(false);
+              }}
+              className={`mt-6 flex h-10 w-full items-center justify-center rounded-lg text-sm font-semibold transition-colors ${
+                profileSaved
+                  ? "bg-indigo-600/20 text-indigo-400"
+                  : "bg-indigo-600 text-white hover:bg-indigo-500"
+              }`}
+            >
+              {profileSaving ? "Saving\u2026" : profileSaved ? "Saved." : "Save Profile"}
+            </button>
           </div>
         </section>
 

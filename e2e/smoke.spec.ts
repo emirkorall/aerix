@@ -135,12 +135,31 @@ test.describe("Training Packs page", () => {
   });
 });
 
+test.describe("Invite page", () => {
+  test("redirects unauthenticated users to /login", async ({ page }) => {
+    const response = await page.goto("/invite");
+    expect(page.url()).toContain("/login");
+    expect(page.url()).toContain("returnTo");
+    expect(response?.status()).toBeLessThan(400);
+  });
+});
+
+test.describe("Public Profile", () => {
+  test("shows not-found state for non-existent username", async ({ page }) => {
+    await page.goto("/u/thisuserdoesnotexist999");
+    await expect(
+      page.getByRole("heading", { name: /Profile not found/i })
+    ).toBeVisible();
+    await expect(page.getByRole("link", { name: "Try AERIX" })).toBeVisible();
+  });
+});
+
 test.describe("Homepage", () => {
   test("shows Sign in link for unauthenticated users", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: /Train together/i })
+      page.getByRole("heading", { name: /rank-up starts/i })
     ).toBeVisible();
   });
 });

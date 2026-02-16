@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/src/lib/supabase/client";
 import { saveOnboardingProfile, fetchOnboardingStatus } from "@/src/lib/onboarding";
 
@@ -28,7 +28,16 @@ const DIVISIONS = ["I", "II", "III"] as const;
 type Division = (typeof DIVISIONS)[number];
 
 export default function OnboardingPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-[#060608]" />}>
+      <OnboardingContent />
+    </Suspense>
+  );
+}
+
+function OnboardingContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
@@ -41,6 +50,12 @@ export default function OnboardingPage() {
   const [tier, setTier] = useState<Tier>("Gold");
   const [division, setDivision] = useState<Division>("I");
   const [skipRank, setSkipRank] = useState(false);
+
+  // Referral
+  const [refCode, setRefCode] = useState(searchParams.get("ref") ?? "");
+  const [refApplying, setRefApplying] = useState(false);
+  const [refResult, setRefResult] = useState<"success" | "error" | null>(null);
+  const [refError, setRefError] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -289,6 +304,67 @@ export default function OnboardingPage() {
                 </div>
               )}
 
+              {/* Referral code */}
+              <div className="mt-8 rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
+                <p className="text-sm font-medium text-white">
+                  Referral code <span className="text-neutral-600">(optional)</span>
+                </p>
+                <p className="mt-0.5 text-xs text-neutral-600">
+                  Got a code from a friend? Both of you get +7 days Starter.
+                </p>
+                <div className="mt-3 flex gap-2">
+                  <input
+                    type="text"
+                    value={refCode}
+                    onChange={(e) => {
+                      setRefCode(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""));
+                      setRefResult(null);
+                      setRefError(null);
+                    }}
+                    disabled={refResult === "success"}
+                    placeholder="e.g. abc12xyz"
+                    maxLength={10}
+                    className="flex-1 rounded-lg border border-neutral-800/60 bg-[#060608] px-3 py-2 text-sm text-white outline-none focus:border-neutral-700 disabled:opacity-50"
+                  />
+                  <button
+                    type="button"
+                    disabled={refApplying || refResult === "success" || refCode.length < 3}
+                    onClick={async () => {
+                      setRefApplying(true);
+                      setRefError(null);
+                      try {
+                        const res = await fetch("/api/referrals/redeem", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ code: refCode }),
+                        });
+                        if (res.ok) {
+                          setRefResult("success");
+                        } else {
+                          const data = await res.json().catch(() => ({}));
+                          setRefResult("error");
+                          setRefError(data.error ?? "Failed to apply code.");
+                        }
+                      } catch {
+                        setRefResult("error");
+                        setRefError("Network error.");
+                      }
+                      setRefApplying(false);
+                    }}
+                    className={`shrink-0 rounded-lg px-4 py-2 text-xs font-semibold transition-colors disabled:opacity-50 ${
+                      refResult === "success"
+                        ? "bg-indigo-600/20 text-indigo-400"
+                        : "bg-indigo-600 text-white hover:bg-indigo-500"
+                    }`}
+                  >
+                    {refApplying ? "Applying\u2026" : refResult === "success" ? "+7 days unlocked!" : "Apply"}
+                  </button>
+                </div>
+                {refError && (
+                  <p className="mt-2 text-xs text-red-400">{refError}</p>
+                )}
+              </div>
+
               <div className="mt-10 flex items-center justify-between">
                 <button
                   onClick={() => setStep(2)}
@@ -318,7 +394,7 @@ export default function OnboardingPage() {
                     disabled={saving}
                     className="flex h-11 items-center justify-center rounded-lg bg-indigo-600 px-8 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:opacity-50"
                   >
-                    {saving ? "Saving…" : "Finish"}
+                    {saving ? "Saving\u2026" : "Finish"}
                   </button>
                 </div>
               </div>

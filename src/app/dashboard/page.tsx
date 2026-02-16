@@ -31,6 +31,16 @@ import {
   GOALS,
   PLAYLISTS,
 } from "@/src/lib/training-completion";
+import { TRAINING_PACKS, canAccessPack } from "@/src/lib/trainingPacks";
+import type { TrainingPack } from "@/src/lib/trainingPacks";
+import {
+  getLocalPackProgress,
+  getCompletedCount,
+  recommendNextPack,
+  mergeRemoteProgress,
+} from "@/src/lib/packProgress";
+import { getPackProgressMap } from "@/src/lib/supabase/packProgress";
+import { syncProfileStats } from "@/src/lib/supabase/publicProfile";
 import type { FocusTag, RankSnapshot, OnboardingData, Goal, Playlist } from "@/src/lib/training-completion";
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
@@ -66,6 +76,7 @@ export default function Dashboard() {
   const [goalPickerOpen, setGoalPickerOpen] = useState(false);
   const [goalSaving, setGoalSaving] = useState(false);
   const [reminderNudge, setReminderNudge] = useState(false);
+  const [recommendedPack, setRecommendedPack] = useState<{ pack: TrainingPack; done: number; total: number } | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -91,9 +102,45 @@ export default function Dashboard() {
             window.history.replaceState({}, "", "/dashboard");
           }
           syncCompletions().then(syncFromStorage);
-          fetchUserProfile().then((p) => {
+          fetchUserProfile().then(async (p) => {
             setUserProfile(p);
             setUserPlan(p.plan);
+            // Load pack progress and compute recommendation
+            try {
+              const remote = await getPackProgressMap();
+              const merged = mergeRemoteProgress(remote);
+              const accessible = TRAINING_PACKS.filter((pk) => canAccessPack(pk, p.plan));
+              const rec = recommendNextPack(accessible, merged);
+              if (rec) {
+                setRecommendedPack({
+                  pack: rec,
+                  done: getCompletedCount(rec, merged[rec.id]),
+                  total: rec.drills.length,
+                });
+              }
+              // Sync streak + packs count + consistency for public profile
+              const streaks = computeStreaks();
+              const packsCount = TRAINING_PACKS.filter((pk) => {
+                const prog = merged[pk.id];
+                return prog && getCompletedCount(pk, prog) >= pk.drills.length;
+              }).length;
+              const dates = getCompletedDates();
+              const count14 = getCompletedDaysLastNDays(dates, 14);
+              const cs = computeConsistencyScore(count14, 14);
+              syncProfileStats(streaks.current, packsCount, cs);
+            } catch {
+              // Fall back to local-only
+              const local = getLocalPackProgress();
+              const accessible = TRAINING_PACKS.filter((pk) => canAccessPack(pk, p.plan));
+              const rec = recommendNextPack(accessible, local);
+              if (rec) {
+                setRecommendedPack({
+                  pack: rec,
+                  done: getCompletedCount(rec, local[rec.id]),
+                  total: rec.drills.length,
+                });
+              }
+            }
           });
           fetchWeeklyGoal().then(setWeeklyGoal);
           fetchReminderSettings().then((s) => {
@@ -799,6 +846,45 @@ export default function Dashboard() {
 
         <div className="h-px w-full bg-neutral-800/60" />
 
+        {/* ── Recommended Pack ── */}
+        {recommendedPack && (
+          <section className="py-10">
+            <h2 className="mb-6 text-sm font-medium text-neutral-500">
+              Recommended Pack
+            </h2>
+            <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-white">
+                    {recommendedPack.pack.title}
+                  </p>
+                  <p className="mt-1 text-xs text-neutral-500">
+                    {recommendedPack.done} / {recommendedPack.total} drills completed
+                  </p>
+                  <div className="mt-2 h-1.5 w-full rounded-full bg-neutral-800/60">
+                    <div
+                      className="h-full rounded-full bg-indigo-500 transition-all"
+                      style={{
+                        width: `${Math.round(
+                          (recommendedPack.done / recommendedPack.total) * 100
+                        )}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+                <Link
+                  href="/packs"
+                  className="shrink-0 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
+                >
+                  {recommendedPack.done > 0 ? "Continue Pack" : "Start Pack"}
+                </Link>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {recommendedPack && <div className="h-px w-full bg-neutral-800/60" />}
+
         <section className="py-10">
           <h2 className="mb-6 text-sm font-medium text-neutral-500">
             Training Library
@@ -957,6 +1043,51 @@ export default function Dashboard() {
               </p>
               <p className="mt-0.5 text-xs text-neutral-500">
                 Team up with players who match your rank and goals.
+              </p>
+            </div>
+            <svg
+              className="h-4 w-4 shrink-0 text-neutral-700"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+            </svg>
+          </Link>
+        </section>
+
+        <div className="h-px w-full bg-neutral-800/60" />
+
+        <section className="py-10">
+          <h2 className="mb-6 text-sm font-medium text-neutral-500">
+            Invite
+          </h2>
+          <Link
+            href="/invite"
+            className="flex items-center gap-4 rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5 transition-colors hover:border-neutral-700/60"
+          >
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-600/15">
+              <svg
+                className="h-4 w-4 text-indigo-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21.75 9v.906a2.25 2.25 0 0 1-1.183 1.981l-6.478 3.488M2.25 9v.906a2.25 2.25 0 0 0 1.183 1.981l6.478 3.488m8.839 2.51-4.66-2.51m0 0-1.023-.55a2.25 2.25 0 0 0-2.134 0l-1.022.55m0 0-4.661 2.51m16.5 1.615a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V8.844a2.25 2.25 0 0 1 1.183-1.981l7.5-4.039a2.25 2.25 0 0 1 2.134 0l7.5 4.039a2.25 2.25 0 0 1 1.183 1.98V19.5Z"
+                />
+              </svg>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-white">
+                Invite a Teammate
+              </p>
+              <p className="mt-0.5 text-xs text-neutral-500">
+                Both of you get +7 days Starter trial time.
               </p>
             </div>
             <svg

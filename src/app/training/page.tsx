@@ -30,6 +30,8 @@ import { fetchOnboardingStatus } from "@/src/lib/onboarding";
 import { createClient } from "@/src/lib/supabase/client";
 import { getDrillById, getLocalQueue, setLocalQueue, QUEUE_LIMITS } from "@/src/lib/drill-library";
 import { syncDrillQueue, replaceQueue } from "@/src/lib/supabase/sync-drills";
+import { markDrillDoneInPacks } from "@/src/lib/packProgress";
+import { upsertPackProgress } from "@/src/lib/supabase/packProgress";
 
 type Plan = "free" | "starter" | "pro";
 
@@ -120,6 +122,14 @@ function QueueSession() {
     const next = new Set(doneDrills);
     next.add(currentDrill.id);
     setDoneDrills(next);
+
+    // Track pack progress
+    const affectedPacks = markDrillDoneInPacks(currentDrill.id);
+    if (signedIn) {
+      for (const packId of affectedPacks) {
+        upsertPackProgress(packId, [currentDrill.id], true);
+      }
+    }
 
     // Auto-advance to next incomplete
     const nextIdx = drills.findIndex((d, i) => i > currentIndex && !next.has(d.id));
