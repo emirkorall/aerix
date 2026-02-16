@@ -30,6 +30,7 @@ import {
   getPackStatus,
   getCompletedCount,
   mergeRemoteProgress,
+  recommendNextPack,
 } from "@/src/lib/packProgress";
 import type { PackProgressMap, PackStatus } from "@/src/lib/packProgress";
 import { getPackProgressMap, upsertPackProgress } from "@/src/lib/supabase/packProgress";
@@ -164,6 +165,8 @@ export default function PacksPage() {
     showToast(`Queued ${added} drill${added === 1 ? "" : "s"}`);
   }
 
+  const recommendedPackId = recommendNextPack(TRAINING_PACKS, progress)?.id ?? null;
+
   const filteredPacks = TRAINING_PACKS.filter((pack) => {
     if (filter === "all") return true;
     const status = getPackStatus(pack, progress[pack.id]);
@@ -171,7 +174,7 @@ export default function PacksPage() {
   });
 
   return (
-    <main className="min-h-screen bg-[#060608] text-white">
+    <main className="min-h-screen bg-[#060608] text-white aerix-grid">
       <div className="mx-auto max-w-xl px-6">
         {/* Nav */}
         <nav className="flex items-center justify-between py-6">
@@ -297,6 +300,11 @@ export default function PacksPage() {
                           <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_STYLE[status]}`}>
                             {STATUS_LABEL[status]}
                           </span>
+                          {pack.id === recommendedPackId && status !== "completed" && (
+                            <span className="shrink-0 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-400">
+                              Recommended
+                            </span>
+                          )}
                           {!unlocked && (
                             <span className="shrink-0 rounded-full border border-neutral-800 bg-neutral-900 px-1.5 py-0.5 text-[9px] font-medium text-neutral-500 capitalize">
                               {pack.planAccess}

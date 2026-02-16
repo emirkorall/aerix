@@ -1,12 +1,13 @@
 import Stripe from "stripe";
+import { serverEnv } from "@/src/lib/env";
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+export const stripe = new Stripe(serverEnv.stripeSecretKey, {
   typescript: true,
 });
 
-const PRICE_MAP: Record<string, string | undefined> = {
-  starter: process.env.STRIPE_PRICE_STARTER,
-  pro: process.env.STRIPE_PRICE_PRO,
+const PRICE_MAP: Record<string, string> = {
+  starter: serverEnv.stripePriceStarter,
+  pro: serverEnv.stripePricePro,
 };
 
 export function getPriceId(plan: string): string | null {

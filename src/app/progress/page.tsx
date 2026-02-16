@@ -208,7 +208,7 @@ function ProgressContent() {
               : "You're getting started. One session at a time.";
 
   return (
-    <main className="min-h-screen bg-[#060608] text-white">
+    <main className="min-h-screen bg-[#060608] text-white aerix-grid">
       <div className="mx-auto max-w-xl px-6">
         <nav className="flex items-center justify-between py-6">
           <Link
@@ -250,6 +250,31 @@ function ProgressContent() {
         </section>
 
         <div className="h-px w-full bg-neutral-800/60" />
+
+        {/* ── First-time guidance ── */}
+        {ready && completedDates.size === 0 && (
+          <section className="py-10">
+            <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] px-6 py-10 text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-600/10">
+                <svg className="h-6 w-6 text-indigo-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
+                </svg>
+              </div>
+              <p className="text-sm font-medium text-neutral-300">
+                No training sessions yet
+              </p>
+              <p className="mt-1.5 text-xs text-neutral-600">
+                Complete your first session and your progress will appear here.
+              </p>
+              <Link
+                href="/training"
+                className="mt-5 inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
+              >
+                Start training
+              </Link>
+            </div>
+          </section>
+        )}
 
         {/* ── Stat Cards ── */}
         <section className="py-10">

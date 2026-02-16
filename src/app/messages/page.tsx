@@ -23,7 +23,7 @@ export default function MessagesPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-[#060608] text-white">
+    <main className="min-h-screen bg-[#060608] text-white aerix-grid">
       <div className="mx-auto max-w-xl px-6">
         {/* Nav */}
         <nav className="flex items-center justify-between py-6">
@@ -68,13 +68,23 @@ export default function MessagesPage() {
           {!ready ? (
             <p className="text-center text-sm text-neutral-600">Loading...</p>
           ) : threads.length === 0 ? (
-            <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6 text-center">
-              <p className="text-sm text-neutral-500">No messages yet.</p>
+            <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] px-6 py-10 text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-600/10">
+                <svg className="h-6 w-6 text-indigo-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
+                </svg>
+              </div>
+              <p className="text-sm font-medium text-neutral-300">
+                No conversations yet
+              </p>
+              <p className="mt-1.5 text-xs text-neutral-600">
+                Connect with players in matchmaking to start chatting.
+              </p>
               <Link
                 href="/matchmaking"
-                className="mt-4 inline-block text-xs font-medium text-indigo-400 hover:text-indigo-300"
+                className="mt-5 inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
               >
-                Find players to team up with &rarr;
+                Find teammates
               </Link>
             </div>
           ) : (

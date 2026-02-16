@@ -227,7 +227,7 @@ export default function Dashboard() {
   );
 
   return (
-    <main className="min-h-screen bg-[#060608] text-white">
+    <main className="min-h-screen bg-[#060608] text-white aerix-grid">
       <div className="mx-auto max-w-xl px-6">
         <nav className="flex items-center justify-between py-6">
           <Link
@@ -236,41 +236,35 @@ export default function Dashboard() {
           >
             Aerix
           </Link>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/feedback"
-              className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
-            >
-              Feedback
-            </Link>
-            <Link
-              href="/settings"
-              className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
-            >
-              Settings
-            </Link>
+          <div className="flex items-center gap-3 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <Link
               href="/messages"
-              className="relative text-sm text-neutral-400 transition-colors hover:text-white"
+              className="relative shrink-0 py-1 text-sm text-neutral-400 transition-colors hover:text-white"
             >
               Messages
               {unreadCount > 0 && (
-                <span className="absolute -top-1.5 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-indigo-600 px-1 text-[9px] font-bold text-white">
+                <span className="absolute -top-1 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-indigo-600 px-1 text-[9px] font-bold text-white">
                   {unreadCount}
                 </span>
               )}
             </Link>
             <Link
               href="/library"
-              className="text-sm text-neutral-400 transition-colors hover:text-white"
+              className="shrink-0 py-1 text-sm text-neutral-400 transition-colors hover:text-white"
             >
               Library
             </Link>
             <Link
               href="/pricing"
-              className="text-sm text-neutral-400 transition-colors hover:text-white"
+              className="shrink-0 py-1 text-sm text-neutral-400 transition-colors hover:text-white"
             >
               Plans
+            </Link>
+            <Link
+              href="/settings"
+              className="shrink-0 py-1 text-xs text-neutral-600 transition-colors hover:text-neutral-400"
+            >
+              Settings
             </Link>
             <button
               onClick={async () => {
@@ -278,7 +272,7 @@ export default function Dashboard() {
                 await supabase.auth.signOut();
                 router.push("/");
               }}
-              className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
+              className="shrink-0 py-1 text-xs text-neutral-600 transition-colors hover:text-neutral-400"
             >
               Sign out
             </button>
@@ -292,6 +286,7 @@ export default function Dashboard() {
           <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
             Welcome back.
           </h1>
+          <span className="accent-line" />
           <p className="mt-4 text-base leading-relaxed text-neutral-400">
             Here&apos;s where you are. Keep showing up — that&apos;s all it
             takes.

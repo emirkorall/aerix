@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { stripe, getPlanFromPriceId } from "@/src/lib/stripe";
 import { createAdminClient } from "@/src/lib/supabase/admin";
+import { serverEnv } from "@/src/lib/env";
 import type Stripe from "stripe";
 
 export const runtime = "nodejs";
@@ -18,7 +19,7 @@ export async function POST(request: Request) {
     event = stripe.webhooks.constructEvent(
       body,
       sig,
-      process.env.STRIPE_WEBHOOK_SECRET!
+      serverEnv.stripeWebhookSecret
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : "unknown error";

@@ -24,3 +24,26 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Global focus-visible ring for keyboard navigation */
+:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Subtle dot-grid motif for page backgrounds */
+.aerix-grid {
+  background-image: radial-gradient(circle, rgba(99, 102, 241, 0.04) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Section accent underline */
+.accent-line {
+  display: block;
+  width: 32px;
+  height: 2px;
+  background: linear-gradient(90deg, #6366f1, transparent);
+  border-radius: 1px;
+  margin-top: 12px;
+}
