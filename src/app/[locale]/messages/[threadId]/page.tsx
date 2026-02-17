@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
+import { toast } from "sonner";
 import { createClient } from "@/src/lib/supabase/client";
 import { MESSAGE_COOLDOWN_SEC } from "@/src/lib/matchmaking";
 import type { MessageThread, Message, ThreadStatus } from "@/src/lib/matchmaking";
@@ -34,7 +35,6 @@ export default function ThreadPage() {
   const [sending, setSending] = useState(false);
   const [cooldown, setCooldown] = useState(false);
   const [ready, setReady] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
   const [blocked, setBlocked] = useState(false);
   const [confirmBlock, setConfirmBlock] = useState(false);
   const [responding, setResponding] = useState(false);
@@ -75,10 +75,46 @@ export default function ThreadPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Poll for new messages + status changes
+  // Realtime subscription for new messages
+  const realtimeActive = useRef(false);
+
+  useEffect(() => {
+    if (!ready || blocked || threadStatus !== "accepted") return;
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`thread-${threadId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `thread_id=eq.${threadId}`,
+        },
+        (payload) => {
+          const newMsg = payload.new as Message;
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === newMsg.id)) return prev;
+            return [...prev, newMsg];
+          });
+        }
+      )
+      .subscribe((status) => {
+        realtimeActive.current = status === "SUBSCRIBED";
+      });
+
+    return () => {
+      realtimeActive.current = false;
+      supabase.removeChannel(channel);
+    };
+  }, [ready, threadId, blocked, threadStatus]);
+
+  // Poll as fallback only when realtime is not active
   useEffect(() => {
     if (!ready || blocked) return;
     const interval = setInterval(async () => {
+      if (realtimeActive.current && threadStatus === "accepted") return;
       const [t, msgs] = await Promise.all([
         fetchThread(threadId),
         threadStatus === "accepted" ? fetchMessages(threadId) : Promise.resolve(messages),
@@ -101,20 +137,15 @@ export default function ThreadPage() {
     return () => clearInterval(interval);
   }, [ready, threadId, blocked, threadStatus, messages]);
 
-  function showToast(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast(null), 2500);
-  }
-
   async function handleAccept() {
     setResponding(true);
     const ok = await acceptThread(threadId);
     setResponding(false);
     if (ok) {
       setThreadStatus("accepted");
-      showToast("Request accepted! You can now chat.");
+      toast("Request accepted! You can now chat.");
     } else {
-      showToast("Failed to accept. Try again.");
+      toast("Failed to accept. Try again.");
     }
   }
 
@@ -124,9 +155,9 @@ export default function ThreadPage() {
     setResponding(false);
     if (ok) {
       setThreadStatus("declined");
-      showToast("Request declined.");
+      toast("Request declined.");
     } else {
-      showToast("Failed to decline. Try again.");
+      toast("Failed to decline. Try again.");
     }
   }
 
@@ -138,6 +169,7 @@ export default function ThreadPage() {
     if (msg) {
       setMessages((prev) => [...prev, msg]);
       setBody("");
+      toast("Message sent");
       setCooldown(true);
       setTimeout(() => setCooldown(false), MESSAGE_COOLDOWN_SEC * 1000);
     }
@@ -150,9 +182,9 @@ export default function ThreadPage() {
     const result = await blockUser(otherId);
     if (result.ok) {
       setBlocked(true);
-      showToast("User blocked.");
+      toast("User blocked.");
     } else {
-      showToast(result.error ?? "Failed to block.");
+      toast(result.error ?? "Failed to block.");
     }
   }
 
@@ -172,9 +204,9 @@ export default function ThreadPage() {
     if (result.ok) {
       setReportingMsgId(null);
       setReportDetails("");
-      showToast("Report submitted.");
+      toast("Report submitted.");
     } else {
-      showToast(result.error ?? "Report failed.");
+      toast(result.error ?? "Report failed.");
     }
   }
 
@@ -522,12 +554,6 @@ export default function ThreadPage() {
         </div>
       </div>
 
-      {/* Toast */}
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-lg border border-neutral-800/60 bg-[#0c0c10] px-4 py-2.5 text-xs font-medium text-neutral-300 shadow-lg">
-          {toast}
-        </div>
-      )}
     </main>
   );
 }

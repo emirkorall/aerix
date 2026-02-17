@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import {
   isCompletedToday,
   setCompletedToday,
@@ -141,6 +142,7 @@ function QueueSession() {
       setLocalQueue([]);
       if (signedIn) replaceQueue([]);
       setCompletedToday(true);
+      toast("Training marked complete");
     }
   }
 
@@ -1010,6 +1012,7 @@ function TrainingContent() {
                 onClick={() => {
                   setCompleted(true);
                   setCompletedToday(true);
+                  toast("Training marked complete");
                 }}
                 disabled={checkedCount === 0}
                 className={`flex h-11 w-full items-center justify-center rounded-lg text-sm font-semibold transition-colors ${

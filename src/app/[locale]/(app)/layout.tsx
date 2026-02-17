@@ -1,15 +1,17 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link, usePathname } from "@/src/i18n/routing";
+import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
+import { LanguageSwitcher } from "@/src/components/LanguageSwitcher";
 
-const navItems = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/training", label: "Training" },
-  { href: "/play", label: "Play" },
-  { href: "/profile", label: "Profile" },
-];
+const navKeys = [
+  { href: "/dashboard", key: "dashboard" },
+  { href: "/training", key: "training" },
+  { href: "/play", key: "play" },
+  { href: "/updates", key: "updates" },
+  { href: "/profile", key: "profile" },
+] as const;
 
 function isActivePath(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -17,6 +19,7 @@ function isActivePath(pathname: string, href: string): boolean {
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const t = useTranslations("Nav");
 
   return (
     <div className="min-h-screen bg-[#06080d] text-neutral-100">
@@ -30,7 +33,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </Link>
 
           <nav className="flex items-center gap-1.5">
-            {navItems.map((item) => {
+            {navKeys.map((item) => {
               const active = isActivePath(pathname, item.href);
 
               return (
@@ -44,7 +47,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                       : "text-neutral-400 hover:bg-white/5 hover:text-neutral-200",
                   ].join(" ")}
                 >
-                  {item.label}
+                  {t(item.key)}
                 </Link>
               );
             })}
@@ -52,8 +55,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               href="/pricing"
               className="ml-1 rounded-md px-3 py-2 text-sm font-medium text-indigo-400/80 transition-colors hover:bg-white/5 hover:text-indigo-300"
             >
-              Upgrade
+              {t("upgrade")}
             </Link>
+            <LanguageSwitcher />
           </nav>
         </div>
       </header>

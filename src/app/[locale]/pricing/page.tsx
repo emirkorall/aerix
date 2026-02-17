@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/src/i18n/routing";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { fetchUserProfile, startTrial } from "@/src/lib/user-plan";
 import type { UserProfile } from "@/src/lib/user-plan";
 import { canStartTrial } from "@/src/lib/trial";
@@ -41,6 +42,8 @@ function Feature({ icon, children }: { icon: React.ReactNode; children: React.Re
 }
 
 export default function Pricing() {
+  const t = useTranslations("Pricing");
+  const nav = useTranslations("Nav");
   const [region, setRegion] = useState<Region>("eu");
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [trialStarting, setTrialStarting] = useState(false);
@@ -61,16 +64,16 @@ export default function Pricing() {
             href="/dashboard"
             className="rounded-md bg-white/[0.07] px-4 py-2 text-sm font-medium text-neutral-200 transition-colors hover:bg-white/[0.12]"
           >
-            Sign in
+            {nav("signIn")}
           </Link>
         </nav>
 
         <section className="flex flex-col items-center pt-20 pb-16 text-center">
           <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Simple pricing, no surprises.
+            {t("title")}
           </h1>
           <p className="mt-4 max-w-md text-base leading-relaxed text-neutral-400">
-            Free to start training. Upgrade for deeper tools. Cancel anytime.
+            {t("subtitle")}
           </p>
 
           <div className="mt-6 flex items-center gap-1 rounded-lg border border-neutral-800/60 bg-[#0c0c10] p-1">
@@ -82,7 +85,7 @@ export default function Pricing() {
                   : "text-neutral-500 hover:text-neutral-300"
               }`}
             >
-              Europe (EUR)
+              {t("europe")}
             </button>
             <button
               onClick={() => setRegion("us")}
@@ -92,7 +95,7 @@ export default function Pricing() {
                   : "text-neutral-500 hover:text-neutral-300"
               }`}
             >
-              USA (USD)
+              {t("usa")}
             </button>
           </div>
         </section>
@@ -100,56 +103,56 @@ export default function Pricing() {
         <div className="grid gap-4 pb-20 sm:grid-cols-3">
           <div className="flex flex-col rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6">
             <div className="mb-6">
-              <h2 className="text-base font-semibold text-white">Free</h2>
-              <p className="mt-1 text-xs text-neutral-500">Solo training &amp; consistency</p>
+              <h2 className="text-base font-semibold text-white">{t("freeName")}</h2>
+              <p className="mt-1 text-xs text-neutral-500">{t("freeSub")}</p>
             </div>
 
             <p className="mb-6">
               <span className="text-3xl font-bold text-white">{p.symbol}0</span>
-              <span className="ml-1 text-sm text-neutral-500">/month</span>
+              <span className="ml-1 text-sm text-neutral-500">{t("month")}</span>
             </p>
 
             <Link
               href="/plans/free"
               className="mb-8 flex h-10 items-center justify-center rounded-lg border border-neutral-800 text-sm font-medium text-neutral-300 transition-colors hover:border-neutral-600 hover:text-white"
             >
-              Get Started
+              {t("getStarted")}
             </Link>
 
             <ul className="flex flex-col gap-3 text-sm text-neutral-400">
-              <Feature icon={check}>Daily training + streak tracking</Feature>
-              <Feature icon={check}>Basic weekly progress view</Feature>
-              <Feature icon={check}>Session notes after each day</Feature>
-              <Feature icon={check}>3 training blocks with videos</Feature>
+              <Feature icon={check}>{t("freeA")}</Feature>
+              <Feature icon={check}>{t("freeB")}</Feature>
+              <Feature icon={check}>{t("freeC")}</Feature>
+              <Feature icon={check}>{t("freeD")}</Feature>
               <Feature icon={dash}>
-                <span className="text-neutral-600">Focus tags &amp; time tracking (limited)</span>
+                <span className="text-neutral-600">{t("freeE")}</span>
               </Feature>
               <Feature icon={dash}>
-                <span className="text-neutral-600">Insights &amp; deeper analysis</span>
+                <span className="text-neutral-600">{t("freeF")}</span>
               </Feature>
             </ul>
           </div>
 
           <div className="relative flex flex-col rounded-xl border border-indigo-500/30 bg-[#0c0c10] p-6">
             <div className="absolute -top-3 right-6 rounded-full bg-indigo-600 px-3 py-0.5 text-[11px] font-semibold text-white">
-              Popular
+              {t("popular")}
             </div>
 
             <div className="mb-6">
-              <h2 className="text-base font-semibold text-white">Starter</h2>
-              <p className="mt-1 text-xs text-neutral-500">Train smarter, track everything</p>
+              <h2 className="text-base font-semibold text-white">{t("starterName")}</h2>
+              <p className="mt-1 text-xs text-neutral-500">{t("starterSub")}</p>
             </div>
 
             <p className="mb-6">
               <span className="text-3xl font-bold text-white">{p.symbol}{p.starter}</span>
-              <span className="ml-1 text-sm text-neutral-500">/month</span>
+              <span className="ml-1 text-sm text-neutral-500">{t("month")}</span>
             </p>
 
             <Link
               href="/upgrade?plan=starter"
               className="mb-2 flex h-10 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
             >
-              Subscribe
+              {t("subscribe")}
             </Link>
             {profile && canStartTrial(profile) && (
               <button
@@ -164,89 +167,86 @@ export default function Pricing() {
                 }}
                 className="mb-6 flex h-9 w-full items-center justify-center rounded-lg border border-indigo-500/30 text-xs font-medium text-indigo-300 transition-colors hover:border-indigo-500/50 hover:text-indigo-200 disabled:opacity-50"
               >
-                {trialStarting ? "Starting…" : "Try free for 7 days"}
+                {trialStarting ? "Starting…" : t("tryFree")}
               </button>
             )}
             {!(profile && canStartTrial(profile)) && <div className="mb-6" />}
 
             <ul className="flex flex-col gap-3 text-sm text-neutral-400">
-              <Feature icon={check}>Everything in Free</Feature>
+              <Feature icon={check}>{t("starterA")}</Feature>
               <Feature icon={checkAccent}>
-                <span className="text-indigo-300">6 training blocks with videos</span>
+                <span className="text-indigo-300">{t("starterB")}</span>
               </Feature>
               <Feature icon={checkAccent}>
-                <span className="text-indigo-300">Full weekly plan depth</span>
+                <span className="text-indigo-300">{t("starterC")}</span>
               </Feature>
               <Feature icon={checkAccent}>
-                <span className="text-indigo-300">Focus tags &amp; session duration tracking</span>
+                <span className="text-indigo-300">{t("starterD")}</span>
               </Feature>
               <Feature icon={checkAccent}>
-                <span className="text-indigo-300">Personalized weekly insights</span>
+                <span className="text-indigo-300">{t("starterE")}</span>
               </Feature>
-              <Feature icon={check}>Manual rank tracking</Feature>
+              <Feature icon={check}>{t("starterF")}</Feature>
             </ul>
 
             <div className="mt-6 rounded-lg border border-indigo-500/10 bg-indigo-500/[0.05] px-3.5 py-2.5">
               <p className="text-xs leading-relaxed text-indigo-300/80">
-                See what you practiced, how long, and what&apos;s improving — all in one place.
+                {t("starterNote")}
               </p>
             </div>
           </div>
 
           <div className="flex flex-col rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6">
             <div className="mb-6">
-              <h2 className="text-base font-semibold text-white">Pro</h2>
-              <p className="mt-1 text-xs text-neutral-500">For competitive grinders</p>
+              <h2 className="text-base font-semibold text-white">{t("proName")}</h2>
+              <p className="mt-1 text-xs text-neutral-500">{t("proSub")}</p>
             </div>
 
             <p className="mb-6">
               <span className="text-3xl font-bold text-white">{p.symbol}{p.pro}</span>
-              <span className="ml-1 text-sm text-neutral-500">/month</span>
+              <span className="ml-1 text-sm text-neutral-500">{t("month")}</span>
             </p>
 
             <Link
               href="/upgrade?plan=pro"
               className="mb-8 flex h-10 items-center justify-center rounded-lg border border-neutral-800 text-sm font-medium text-neutral-300 transition-colors hover:border-neutral-600 hover:text-white"
             >
-              Subscribe
+              {t("subscribe")}
             </Link>
 
             <ul className="flex flex-col gap-3 text-sm text-neutral-400">
-              <Feature icon={check}>Everything in Starter</Feature>
+              <Feature icon={check}>{t("proA")}</Feature>
               <Feature icon={checkAccent}>
-                <span className="text-indigo-300">9 advanced training blocks</span>
+                <span className="text-indigo-300">{t("proB")}</span>
               </Feature>
               <Feature icon={checkAccent}>
-                <span className="text-indigo-300">Rank trend insights</span>
+                <span className="text-indigo-300">{t("proC")}</span>
               </Feature>
-              <Feature icon={check}>Deeper weekly summaries</Feature>
+              <Feature icon={check}>{t("proD")}</Feature>
               <Feature icon={check}>
-                Competitive mindset tools{" "}
-                <span className="text-neutral-600">(coming soon)</span>
+                {t("proE")}{" "}
+                <span className="text-neutral-600">({t("comingSoon")})</span>
               </Feature>
               <Feature icon={check}>
-                Duo / Trio finder{" "}
-                <span className="text-neutral-600">(coming soon)</span>
+                {t("proF")}{" "}
+                <span className="text-neutral-600">({t("comingSoon")})</span>
               </Feature>
             </ul>
           </div>
         </div>
 
         <p className="pb-6 text-center text-[11px] text-neutral-600">
-          Prices shown in {p.label}. We adjust pricing by region to keep things fair.
+          {t("priceNote", { currency: p.label })}
         </p>
 
         <div className="h-px w-full bg-neutral-800/60" />
 
         <section className="py-16">
           <h3 className="mb-6 text-center text-sm font-medium text-neutral-500">
-            Why pay?
+            {t("whyPay")}
           </h3>
           <p className="mx-auto max-w-lg text-center text-sm leading-relaxed text-neutral-500">
-            Free gives you real training tools — streaks, progress, and session notes. Starter
-            and Pro unlock more drills, deeper tracking, and personalized insights so you can
-            see patterns in how you practice. We build for players who want to improve, and
-            every dollar goes back into making AERIX better.
+            {t("whyPayDesc")}
           </p>
         </section>
 
@@ -254,10 +254,10 @@ export default function Pricing() {
 
         <footer className="flex items-center justify-between py-8">
           <Link href="/" className="text-xs text-neutral-600 transition-colors hover:text-neutral-400">
-            ← Back to home
+            {t("backHome")}
           </Link>
           <span className="text-xs text-neutral-600">
-            Cancel anytime. No questions asked.
+            {t("cancelNote")}
           </span>
         </footer>
       </div>

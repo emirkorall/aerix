@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { createClient } from "@/src/lib/supabase/client";
 import { fetchUserPlan } from "@/src/lib/user-plan";
 import type { PlanTier } from "@/src/lib/weekly-plan";
@@ -28,7 +29,6 @@ export default function PostDetailPage() {
   const [post, setPost] = useState<LfgPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [contacting, setContacting] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
   const [isBlocked, setIsBlocked] = useState(false);
 
   // Report state
@@ -57,11 +57,6 @@ export default function PostDetailPage() {
     });
   }, [postId]);
 
-  function showToast(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast(null), 2500);
-  }
-
   async function handleContact() {
     if (!post || !canUseMatchmaking(plan)) return;
     setContacting(true);
@@ -85,9 +80,9 @@ export default function PostDetailPage() {
     if (result.ok) {
       setShowReport(false);
       setReportDetails("");
-      showToast("Report submitted.");
+      toast("Report submitted.");
     } else {
-      showToast(result.error ?? "Report failed.");
+      toast(result.error ?? "Report failed.");
     }
   }
 
@@ -96,9 +91,9 @@ export default function PostDetailPage() {
     const result = await blockUser(post.user_id);
     if (result.ok) {
       setIsBlocked(true);
-      showToast("User blocked.");
+      toast("User blocked.");
     } else {
-      showToast(result.error ?? "Failed to block.");
+      toast(result.error ?? "Failed to block.");
     }
   }
 
@@ -156,7 +151,7 @@ export default function PostDetailPage() {
                   if (!post) return;
                   await unblockUser(post.user_id);
                   setIsBlocked(false);
-                  showToast("User unblocked.");
+                  toast("User unblocked.");
                 }}
                 className="mt-4 inline-block rounded-lg border border-neutral-800/60 px-3 py-1.5 text-xs font-medium text-neutral-400 transition-colors hover:border-neutral-700 hover:text-white"
               >
@@ -334,11 +329,6 @@ export default function PostDetailPage() {
       </div>
 
       {/* Toast */}
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-lg border border-neutral-800/60 bg-[#0c0c10] px-4 py-2.5 text-xs font-medium text-neutral-300 shadow-lg">
-          {toast}
-        </div>
-      )}
     </main>
   );
 }

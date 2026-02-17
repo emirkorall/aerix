@@ -119,7 +119,7 @@ test.describe("Season Updates page", () => {
   test("loads and shows Season Updates heading", async ({ page }) => {
     await page.goto("/updates");
     await expect(
-      page.getByRole("heading", { name: /Stay current/i })
+      page.getByRole("heading", { name: /Patch Notes/i })
     ).toBeVisible();
     expect(page.url()).toContain("/updates");
   });

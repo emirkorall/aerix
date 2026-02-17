@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { createClient } from "@/src/lib/supabase/client";
 import { fetchUserPlan } from "@/src/lib/user-plan";
 import type { PlanTier } from "@/src/lib/weekly-plan";
@@ -40,7 +41,6 @@ export default function LibraryPage() {
   const [tab, setTab] = useState<Tab>("catalog");
   const [saves, setSaves] = useState<string[]>([]);
   const [queue, setQueue] = useState<string[]>([]);
-  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     setSaves(getLocalSaves());
@@ -60,11 +60,6 @@ export default function LibraryPage() {
     });
   }, []);
 
-  function showToast(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast(null), 2500);
-  }
-
   const saveLimit = SAVE_LIMITS[plan];
   const queueLimit = QUEUE_LIMITS[plan];
 
@@ -75,10 +70,10 @@ export default function LibraryPage() {
       setSaves(next);
       setLocalSaves(next);
       if (signedIn) deleteDrillSave(drillId);
-      showToast("Drill removed");
+      toast("Drill removed");
     } else {
       if (saves.length >= saveLimit) {
-        showToast(
+        toast(
           saveLimit === 5
             ? "Free limit reached (5). Upgrade for more."
             : `Save limit reached (${saveLimit}).`
@@ -89,17 +84,17 @@ export default function LibraryPage() {
       setSaves(next);
       setLocalSaves(next);
       if (signedIn) upsertDrillSave(drillId);
-      showToast("Drill saved");
+      toast("Drill saved");
     }
   }
 
   function addToQueue(drillId: string) {
     if (queue.includes(drillId)) {
-      showToast("Already in queue");
+      toast("Already in queue");
       return;
     }
     if (queue.length >= queueLimit) {
-      showToast(
+      toast(
         queueLimit === 1
           ? "Free plan: 1 queued drill. Upgrade for more."
           : `Queue limit reached (${queueLimit}).`
@@ -110,7 +105,7 @@ export default function LibraryPage() {
     setQueue(next);
     setLocalQueue(next);
     if (signedIn) replaceQueue(next);
-    showToast("Added to queue");
+    toast("Added to queue");
   }
 
   function removeFromQueue(drillId: string) {
@@ -378,11 +373,6 @@ export default function LibraryPage() {
       </div>
 
       {/* Toast */}
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-lg border border-neutral-800/60 bg-[#0c0c10] px-4 py-2.5 text-xs font-medium text-neutral-300 shadow-lg">
-          {toast}
-        </div>
-      )}
     </main>
   );
 }

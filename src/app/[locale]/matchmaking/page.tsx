@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { createClient } from "@/src/lib/supabase/client";
 import { fetchUserPlan } from "@/src/lib/user-plan";
 import type { PlanTier } from "@/src/lib/weekly-plan";
@@ -39,7 +40,6 @@ export default function MatchmakingPage() {
   const [view, setView] = useState<View>("feed");
   const [posts, setPosts] = useState<LfgPost[]>([]);
   const [hasOpenPost, setHasOpenPost] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
   const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
 
   // Create form state
@@ -69,19 +69,14 @@ export default function MatchmakingPage() {
     });
   }, []);
 
-  function showToast(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast(null), 2500);
-  }
-
   async function handleCreate() {
     if (!canUseMatchmaking(plan)) return;
     if (hasOpenPost) {
-      showToast("You already have an open post. Close it first.");
+      toast("You already have an open post. Close it first.");
       return;
     }
     if (!note.trim()) {
-      showToast("Add a short note about yourself.");
+      toast("Add a short note about yourself.");
       return;
     }
     setSubmitting(true);
@@ -98,9 +93,9 @@ export default function MatchmakingPage() {
       setPosts((prev) => [{ ...post, display_name: "You" }, ...prev]);
       setView("feed");
       setNote("");
-      showToast("Post created!");
+      toast("Post created!");
     } else {
-      showToast("Failed to create post. Try again.");
+      toast("Failed to create post. Try again.");
     }
   }
 
@@ -108,7 +103,7 @@ export default function MatchmakingPage() {
     await closePost(postId);
     setPosts((prev) => prev.filter((p) => p.id !== postId));
     setHasOpenPost(false);
-    showToast("Post closed.");
+    toast("Post closed.");
   }
 
   async function handleBlock(targetUserId: string) {
@@ -118,9 +113,9 @@ export default function MatchmakingPage() {
       next.add(targetUserId);
       setBlockedIds(next);
       setPosts((prev) => prev.filter((p) => p.user_id !== targetUserId));
-      showToast("User blocked.");
+      toast("User blocked.");
     } else {
-      showToast(result.error ?? "Failed to block.");
+      toast(result.error ?? "Failed to block.");
     }
   }
 
@@ -183,7 +178,7 @@ export default function MatchmakingPage() {
                 type="button"
                 onClick={() => {
                   if (key === "create" && !allowed) {
-                    showToast("Upgrade to Starter+ to create posts.");
+                    toast("Upgrade to Starter+ to create posts.");
                     return;
                   }
                   setView(key);
@@ -253,8 +248,8 @@ export default function MatchmakingPage() {
                       router.push(`/matchmaking/${post.id}`)
                     }
                     onBlock={() => handleBlock(post.user_id)}
-                    onReported={() => showToast("Report submitted.")}
-                    onReportError={(msg) => showToast(msg)}
+                    onReported={() => toast("Report submitted.")}
+                    onReportError={(msg) => toast(msg)}
                   />
                 ))}
               </div>
@@ -429,12 +424,6 @@ export default function MatchmakingPage() {
         </footer>
       </div>
 
-      {/* Toast */}
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-lg border border-neutral-800/60 bg-[#0c0c10] px-4 py-2.5 text-xs font-medium text-neutral-300 shadow-lg">
-          {toast}
-        </div>
-      )}
     </main>
   );
 }

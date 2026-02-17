@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { createClient } from "@/src/lib/supabase/client";
 import { fetchUserPlan } from "@/src/lib/user-plan";
 import type { PlanTier } from "@/src/lib/weekly-plan";
@@ -56,7 +57,6 @@ export default function PacksPage() {
   const [saves, setSaves] = useState<string[]>([]);
   const [queue, setQueue] = useState<string[]>([]);
   const [expandedPack, setExpandedPack] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
   const [progress, setProgress] = useState<PackProgressMap>({});
   const [filter, setFilter] = useState<Filter>("all");
 
@@ -84,11 +84,6 @@ export default function PacksPage() {
       setReady(true);
     });
   }, []);
-
-  function showToast(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast(null), 2500);
-  }
 
   function toggleDrillDone(pack: TrainingPack, drillId: string) {
     const map = { ...progress };
@@ -119,7 +114,7 @@ export default function PacksPage() {
     for (const drill of pack.drills) {
       if (current.includes(drill.id)) continue;
       if (current.length >= saveLimit) {
-        showToast(
+        toast(
           added > 0
             ? `Saved ${added} drill${added === 1 ? "" : "s"} — save limit reached (${saveLimit}).`
             : `Save limit reached (${saveLimit}). Upgrade for more.`
@@ -135,7 +130,7 @@ export default function PacksPage() {
 
     setSaves(current);
     setLocalSaves(current);
-    showToast(`Saved ${added} drill${added === 1 ? "" : "s"} from pack`);
+    toast(`Saved ${added} drill${added === 1 ? "" : "s"} from pack`);
   }
 
   function queuePack(pack: TrainingPack) {
@@ -151,7 +146,7 @@ export default function PacksPage() {
     }
 
     if (added === 0) {
-      showToast(
+      toast(
         current.length >= queueLimit
           ? `Queue full (${queueLimit}). Upgrade for more.`
           : "All drills already queued"
@@ -162,7 +157,7 @@ export default function PacksPage() {
     setQueue(current);
     setLocalQueue(current);
     if (signedIn) replaceQueue(current);
-    showToast(`Queued ${added} drill${added === 1 ? "" : "s"}`);
+    toast(`Queued ${added} drill${added === 1 ? "" : "s"}`);
   }
 
   const recommendedPackId = recommendNextPack(TRAINING_PACKS, progress)?.id ?? null;
@@ -449,11 +444,6 @@ export default function PacksPage() {
       </div>
 
       {/* Toast */}
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-lg border border-neutral-800/60 bg-[#0c0c10] px-4 py-2.5 text-xs font-medium text-neutral-300 shadow-lg">
-          {toast}
-        </div>
-      )}
     </main>
   );
 }
