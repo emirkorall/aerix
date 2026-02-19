@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/src/i18n/routing";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { createClient } from "@/src/lib/supabase/client";
 import { fetchUserPlan } from "@/src/lib/user-plan";
@@ -38,12 +39,6 @@ import { getPackProgressMap, upsertPackProgress } from "@/src/lib/supabase/packP
 
 type Filter = "all" | "in_progress" | "completed";
 
-const STATUS_LABEL: Record<PackStatus, string> = {
-  not_started: "Not started",
-  in_progress: "In progress",
-  completed: "Completed",
-};
-
 const STATUS_STYLE: Record<PackStatus, string> = {
   not_started: "bg-neutral-800/60 text-neutral-500",
   in_progress: "bg-indigo-600/20 text-indigo-400",
@@ -51,6 +46,10 @@ const STATUS_STYLE: Record<PackStatus, string> = {
 };
 
 export default function PacksPage() {
+  const t = useTranslations("Packs");
+  const tCommon = useTranslations("Common");
+  const tNav = useTranslations("Nav");
+
   const [plan, setPlan] = useState<PlanTier>("free");
   const [signedIn, setSignedIn] = useState(false);
   const [ready, setReady] = useState(false);
@@ -116,8 +115,8 @@ export default function PacksPage() {
       if (current.length >= saveLimit) {
         toast(
           added > 0
-            ? `Saved ${added} drill${added === 1 ? "" : "s"} — save limit reached (${saveLimit}).`
-            : `Save limit reached (${saveLimit}). Upgrade for more.`
+            ? t("savedDrills", { n: added, limit: saveLimit })
+            : t("saveLimitReached", { limit: saveLimit })
         );
         setSaves(current);
         setLocalSaves(current);
@@ -130,7 +129,7 @@ export default function PacksPage() {
 
     setSaves(current);
     setLocalSaves(current);
-    toast(`Saved ${added} drill${added === 1 ? "" : "s"} from pack`);
+    toast(t("savedFromPack", { n: added }));
   }
 
   function queuePack(pack: TrainingPack) {
@@ -148,8 +147,8 @@ export default function PacksPage() {
     if (added === 0) {
       toast(
         current.length >= queueLimit
-          ? `Queue full (${queueLimit}). Upgrade for more.`
-          : "All drills already queued"
+          ? t("queueFull", { limit: queueLimit })
+          : t("allQueued")
       );
       return;
     }
@@ -157,7 +156,7 @@ export default function PacksPage() {
     setQueue(current);
     setLocalQueue(current);
     if (signedIn) replaceQueue(current);
-    toast(`Queued ${added} drill${added === 1 ? "" : "s"}`);
+    toast(t("queuedDrills", { n: added }));
   }
 
   const recommendedPackId = recommendNextPack(TRAINING_PACKS, progress)?.id ?? null;
@@ -177,20 +176,20 @@ export default function PacksPage() {
             href="/"
             className="text-sm font-semibold tracking-[0.2em] uppercase text-white"
           >
-            Aerix
+            {tCommon("aerix")}
           </Link>
           <div className="flex items-center gap-4">
             <Link
               href="/dashboard"
               className="text-sm text-neutral-400 transition-colors hover:text-white"
             >
-              Dashboard
+              {tNav("dashboard")}
             </Link>
             <Link
               href="/library"
               className="text-sm text-neutral-400 transition-colors hover:text-white"
             >
-              Library
+              {tCommon("library")}
             </Link>
           </div>
         </nav>
@@ -198,23 +197,22 @@ export default function PacksPage() {
         {/* Header */}
         <section className="pt-20 pb-10">
           <p className="mb-3 text-xs font-medium uppercase tracking-widest text-neutral-500">
-            Premium Content
+            {t("label")}
           </p>
           <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Training Packs
+            {t("title")}
           </h1>
           <p className="mt-4 text-base leading-relaxed text-neutral-400">
-            Curated drill bundles to level up specific skills. Save or queue an
-            entire pack in one click.
+            {t("desc")}
           </p>
           {ready && !signedIn && (
             <p className="mt-3 text-xs text-neutral-600">
-              Preview mode &mdash; local only.{" "}
+              {tCommon("previewLocal")}{" "}
               <Link
                 href="/login?returnTo=/packs"
                 className="text-indigo-400 hover:text-indigo-300"
               >
-                Sign in to sync.
+                {tCommon("signInSync")}
               </Link>
             </p>
           )}
@@ -235,7 +233,7 @@ export default function PacksPage() {
                   : "text-neutral-500 hover:text-neutral-300"
               }`}
             >
-              {f === "all" ? "All" : f === "in_progress" ? "In Progress" : "Completed"}
+              {f === "all" ? t("filterAll") : f === "in_progress" ? t("filterInProgress") : t("filterCompleted")}
             </button>
           ))}
         </div>
@@ -247,14 +245,14 @@ export default function PacksPage() {
           {filteredPacks.length === 0 ? (
             <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6 text-center">
               <p className="text-sm text-neutral-500">
-                No packs match this filter.
+                {t("noMatch")}
               </p>
               <button
                 type="button"
                 onClick={() => setFilter("all")}
                 className="mt-3 text-xs font-medium text-indigo-400 hover:text-indigo-300"
               >
-                Show all packs &rarr;
+                {t("showAll")}
               </button>
             </div>
           ) : (
@@ -293,11 +291,11 @@ export default function PacksPage() {
                             {pack.levelTag}
                           </span>
                           <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_STYLE[status]}`}>
-                            {STATUS_LABEL[status]}
+                            {status === "not_started" ? t("notStarted") : status === "in_progress" ? t("inProgress") : tCommon("completed")}
                           </span>
                           {pack.id === recommendedPackId && status !== "completed" && (
                             <span className="shrink-0 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-400">
-                              Recommended
+                              {t("recommended")}
                             </span>
                           )}
                           {!unlocked && (
@@ -313,7 +311,7 @@ export default function PacksPage() {
                         {/* Progress line + bar */}
                         <div className="mt-2 flex items-center gap-2.5">
                           <p className="text-[11px] text-neutral-600">
-                            {doneCount} / {total} drills
+                            {t("drillsProgress", { done: doneCount, total })}
                           </p>
                           <div className="h-1.5 flex-1 rounded-full bg-neutral-800/60">
                             <div
@@ -367,15 +365,13 @@ export default function PacksPage() {
                           {!unlocked && pack.drills.length > 1 && (
                             <div className="rounded-lg border border-neutral-800/40 bg-neutral-900/30 p-4 text-center">
                               <p className="text-xs text-neutral-500">
-                                +{pack.drills.length - 1} more drill
-                                {pack.drills.length - 1 === 1 ? "" : "s"} in
-                                this pack
+                                {t("moreDrills", { n: pack.drills.length - 1 })}
                               </p>
                               <Link
                                 href="/pricing"
                                 className="mt-2 inline-block text-xs font-medium text-indigo-400 transition-colors hover:text-indigo-300"
                               >
-                                Upgrade to unlock full pack &rarr;
+                                {t("upgradeUnlock")}
                               </Link>
                             </div>
                           )}
@@ -389,14 +385,14 @@ export default function PacksPage() {
                               onClick={() => savePack(pack)}
                               className="rounded-lg border border-neutral-800/60 px-3.5 py-2 text-[11px] font-medium text-neutral-400 transition-colors hover:border-neutral-700 hover:text-neutral-300"
                             >
-                              Save Pack
+                              {t("savePack")}
                             </button>
                             <button
                               type="button"
                               onClick={() => queuePack(pack)}
                               className="rounded-lg border border-neutral-800/60 px-3.5 py-2 text-[11px] font-medium text-neutral-400 transition-colors hover:border-neutral-700 hover:text-neutral-300"
                             >
-                              Queue Pack Session
+                              {t("queuePack")}
                             </button>
                           </div>
                         )}
@@ -413,8 +409,7 @@ export default function PacksPage() {
 
         {/* Disclosure */}
         <p className="py-6 text-center text-[10px] text-neutral-700">
-          Videos are embedded from YouTube and belong to their respective
-          creators.
+          {tCommon("videoDisclosure")}
         </p>
 
         <div className="h-px w-full bg-neutral-800/60" />
@@ -424,21 +419,21 @@ export default function PacksPage() {
             href="/dashboard"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            Dashboard
+            {tNav("dashboard")}
           </Link>
           <span className="text-neutral-800">&middot;</span>
           <Link
             href="/library"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            Library
+            {tCommon("library")}
           </Link>
           <span className="text-neutral-800">&middot;</span>
           <Link
             href="/"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            Home
+            {tCommon("home")}
           </Link>
         </footer>
       </div>
@@ -461,6 +456,7 @@ function PackDrillCard({
   canToggle: boolean;
   onToggle: () => void;
 }) {
+  const t = useTranslations("Packs");
   return (
     <div
       className={`rounded-lg border p-3.5 ${
@@ -534,7 +530,7 @@ function PackDrillCard({
           rel="noopener noreferrer"
           className="text-[10px] text-neutral-600 transition-colors hover:text-neutral-400"
         >
-          Watch on YouTube &nearr;
+          {t("watchYoutube")}
         </a>
       </div>
     </div>

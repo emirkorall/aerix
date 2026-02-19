@@ -1,11 +1,14 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/src/i18n/routing";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { fetchUserPlan } from "@/src/lib/user-plan";
 import type { PlanTier } from "@/src/lib/weekly-plan";
 
 export default function UpgradeSuccess() {
+  const t = useTranslations("UpgradeSuccess");
+  const tNav = useTranslations("Nav");
   const [plan, setPlan] = useState<PlanTier | null>(null);
 
   useEffect(() => {
@@ -48,10 +51,10 @@ export default function UpgradeSuccess() {
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-600 border-t-indigo-400" />
               </div>
               <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-                Activating your plan&hellip;
+                {t("activating")}
               </h1>
               <p className="mt-3 max-w-sm text-sm leading-relaxed text-neutral-400">
-                This usually takes a few seconds.
+                {t("activatingSub")}
               </p>
             </>
           ) : (
@@ -72,13 +75,13 @@ export default function UpgradeSuccess() {
                 </svg>
               </div>
               <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-                You&apos;re in.
+                {t("title")}
               </h1>
               <p className="mt-3 max-w-sm text-sm leading-relaxed text-neutral-400">
-                Thanks for supporting AERIX.
+                {t("thanks")}
                 {plan !== "free" && (
                   <>
-                    {" "}Your <span className="text-white font-medium capitalize">{plan}</span> plan is active.
+                    {" "}{t("planActive", { plan })}
                   </>
                 )}
               </p>
@@ -86,7 +89,7 @@ export default function UpgradeSuccess() {
                 href="/dashboard"
                 className="mt-10 flex h-11 items-center justify-center rounded-lg bg-indigo-600 px-8 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
               >
-                Go to Dashboard
+                {t("goDashboard")}
               </Link>
             </>
           )}

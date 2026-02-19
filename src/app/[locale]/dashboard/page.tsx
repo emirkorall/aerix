@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/src/i18n/routing";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/src/lib/supabase/client";
 import { isSupabaseConfigured } from "@/src/lib/supabase/validate";
 import { syncCompletions } from "@/src/lib/supabase/sync-completions";
@@ -46,6 +47,10 @@ import type { FocusTag, RankSnapshot, OnboardingData, Goal, Playlist } from "@/s
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
 export default function Dashboard() {
+  const t = useTranslations("Dashboard");
+  const tCommon = useTranslations("Common");
+  const tNav = useTranslations("Nav");
+
   const todayIndex = useMemo(() => (new Date().getDay() + 6) % 7, []);
   const weekDates = useMemo(() => getWeekDates(0), []);
 
@@ -157,17 +162,17 @@ export default function Dashboard() {
               if (!data || data.status === "none") return;
               if (data.cancel_at_period_end && data.cancel_at) {
                 const date = new Date(data.cancel_at * 1000);
-                setBillingLabel(`Cancels ${date.toLocaleDateString()}`);
+                setBillingLabel(`cancelsOn:${date.toLocaleDateString()}`);
               } else if (data.status === "active") {
-                setBillingLabel("Active");
+                setBillingLabel("active");
               } else if (data.status === "past_due") {
-                setBillingLabel("Past due");
+                setBillingLabel("pastDue");
               } else if (data.status === "trialing") {
-                setBillingLabel("Trial");
+                setBillingLabel("trial");
               } else if (data.status === "canceled") {
-                setBillingLabel("Canceled");
+                setBillingLabel("canceled");
               } else if (data.status === "incomplete") {
-                setBillingLabel("Incomplete");
+                setBillingLabel("incomplete");
               }
             })
             .catch(() => {});
@@ -226,6 +231,28 @@ export default function Dashboard() {
     [weekDates, completedDays]
   );
 
+  const renderBillingLabel = () => {
+    if (!billingLabel) return null;
+    if (billingLabel.startsWith("cancelsOn:")) {
+      const date = billingLabel.slice("cancelsOn:".length);
+      return t("cancelsOn", { date });
+    }
+    if (billingLabel === "active") return tCommon("active");
+    if (billingLabel === "pastDue") return tCommon("pastDue");
+    if (billingLabel === "trial") return tCommon("trial");
+    if (billingLabel === "canceled") return tCommon("canceled");
+    if (billingLabel === "incomplete") return tCommon("incomplete");
+    return billingLabel;
+  };
+
+  const billingColorClass = () => {
+    if (!billingLabel) return "";
+    if (billingLabel === "active") return "text-emerald-400";
+    if (billingLabel.startsWith("cancelsOn:")) return "text-amber-400";
+    if (billingLabel === "pastDue") return "text-red-400";
+    return "text-neutral-400";
+  };
+
   return (
     <main className="min-h-screen bg-[#060608] text-white aerix-grid">
       <div className="mx-auto max-w-xl px-6">
@@ -241,7 +268,7 @@ export default function Dashboard() {
               href="/messages"
               className="relative shrink-0 py-1 text-sm text-neutral-400 transition-colors hover:text-white"
             >
-              Messages
+              {tNav("messages")}
               {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-indigo-600 px-1 text-[9px] font-bold text-white">
                   {unreadCount}
@@ -252,19 +279,19 @@ export default function Dashboard() {
               href="/library"
               className="shrink-0 py-1 text-sm text-neutral-400 transition-colors hover:text-white"
             >
-              Library
+              {tCommon("library")}
             </Link>
             <Link
               href="/pricing"
               className="shrink-0 py-1 text-sm text-neutral-400 transition-colors hover:text-white"
             >
-              Plans
+              {tCommon("plans")}
             </Link>
             <Link
               href="/settings"
               className="shrink-0 py-1 text-xs text-neutral-600 transition-colors hover:text-neutral-400"
             >
-              Settings
+              {tCommon("settings")}
             </Link>
             <button
               onClick={async () => {
@@ -274,31 +301,30 @@ export default function Dashboard() {
               }}
               className="shrink-0 py-1 text-xs text-neutral-600 transition-colors hover:text-neutral-400"
             >
-              Sign out
+              {tCommon("signOut")}
             </button>
           </div>
         </nav>
 
         <section className="pt-20 pb-10">
           <p className="mb-3 text-xs font-medium uppercase tracking-widest text-neutral-500">
-            Dashboard
+            {t("label")}
           </p>
-          <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Welcome back.
+          <h1 className="text-4xl font-bold leading-[1.1] tracking-tight text-white sm:text-5xl">
+            {t("welcome")}
           </h1>
           <span className="accent-line" />
           <p className="mt-4 text-base leading-relaxed text-neutral-400">
-            Here&apos;s where you are. Keep showing up — that&apos;s all it
-            takes.
+            {t("welcomeSub")}
           </p>
           {focusGoal && focusPlaylist && (
             <p className="mt-3 text-xs text-neutral-500">
-              Focus: <span className="text-neutral-400">{focusGoal}</span>
+              {t("focus")} <span className="text-neutral-400">{focusGoal}</span>
               {" "}&middot;{" "}
               <span className="text-neutral-400">{focusPlaylist}</span>
               {" "}&middot;{" "}
               <Link href="/onboarding" className="text-indigo-400 hover:text-indigo-300">
-                Change
+                {t("change")}
               </Link>
             </p>
           )}
@@ -310,13 +336,13 @@ export default function Dashboard() {
             <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
               <div className="flex items-center justify-between gap-4">
                 <p className="text-sm text-neutral-400">
-                  Reminder: quick session today keeps your goal on track.
+                  {t("nudge")}
                 </p>
                 <Link
                   href={`/training?plan=${userPlan}`}
-                  className="shrink-0 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
+                  className="cta-glow shrink-0 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
                 >
-                  Start Session
+                  {tCommon("startSession")}
                 </Link>
               </div>
             </div>
@@ -330,14 +356,14 @@ export default function Dashboard() {
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-sm font-medium text-indigo-300">
-                    Welcome — your plan is set. Ready for your first session?
+                    {t("welcomeBanner")}
                   </p>
                 </div>
                 <Link
                   href={`/training?plan=${userPlan}`}
-                  className="shrink-0 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
+                  className="cta-glow shrink-0 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
                 >
-                  Start Session
+                  {tCommon("startSession")}
                 </Link>
               </div>
             </div>
@@ -349,15 +375,15 @@ export default function Dashboard() {
           <section className="pb-10">
             <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/[0.03] p-6">
               <h2 className="text-sm font-semibold text-white">
-                Let&apos;s set up your training.
+                {t("setupTitle")}
               </h2>
               <p className="mt-1 text-xs leading-relaxed text-neutral-500">
-                Two quick picks so AERIX can guide you better.
+                {t("setupSub")}
               </p>
 
               <div className="mt-5">
                 <p className="mb-2 text-[11px] font-medium text-neutral-400">
-                  What&apos;s your main goal?
+                  {t("goalLabel")}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {GOALS.map((g) => (
@@ -379,7 +405,7 @@ export default function Dashboard() {
 
               <div className="mt-5">
                 <p className="mb-2 text-[11px] font-medium text-neutral-400">
-                  Main playlist?
+                  {t("playlistLabel")}
                 </p>
                 <div className="flex gap-2">
                   {PLAYLISTS.map((pl) => (
@@ -408,7 +434,7 @@ export default function Dashboard() {
                 }}
                 className="mt-6 flex h-10 w-full items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
               >
-                Save &amp; Start
+                {t("saveStart")}
               </button>
             </div>
           </section>
@@ -418,7 +444,7 @@ export default function Dashboard() {
           <section className="pb-10">
             <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/[0.03] p-5 text-center">
               <p className="text-sm font-medium text-indigo-300">
-                Saved. Let&apos;s get a clean week in.
+                {t("goalSaved")}
               </p>
             </div>
           </section>
@@ -431,17 +457,17 @@ export default function Dashboard() {
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-sm font-medium text-indigo-300">
-                    Starter trial ends in {trialDaysRemaining(userProfile)} day{trialDaysRemaining(userProfile) === 1 ? "" : "s"}
+                    {t("trialBanner", { n: trialDaysRemaining(userProfile) })}
                   </p>
                   <p className="mt-0.5 text-xs text-neutral-500">
-                    Enjoying the extra features? Keep them after your trial.
+                    {t("trialSub")}
                   </p>
                 </div>
                 <Link
                   href="/pricing"
                   className="shrink-0 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
                 >
-                  View Plans
+                  {tCommon("viewPlans")}
                 </Link>
               </div>
             </div>
@@ -453,10 +479,11 @@ export default function Dashboard() {
           <section className="pb-10">
             <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
               <p className="text-sm text-neutral-400">
-                Trial ended — you can keep training on Free or{" "}
+                {t("trialEnded").split(t("upgradeAnytime"))[0]}
                 <Link href="/pricing" className="text-indigo-400 hover:text-indigo-300">
-                  upgrade anytime
-                </Link>.
+                  {t("upgradeAnytime")}
+                </Link>
+                {t("trialEnded").split(t("upgradeAnytime"))[1]}
               </p>
             </div>
           </section>
@@ -469,10 +496,10 @@ export default function Dashboard() {
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-sm font-medium text-white">
-                    Try Starter free for 7 days
+                    {t("tryStarter")}
                   </p>
                   <p className="mt-0.5 text-xs text-neutral-500">
-                    Unlock more training blocks, focus tags, and insights.
+                    {t("tryStarterSub")}
                   </p>
                 </div>
                 <button
@@ -489,7 +516,7 @@ export default function Dashboard() {
                   }}
                   className="shrink-0 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500 disabled:opacity-50"
                 >
-                  {trialStarting ? "Starting…" : "Start Trial"}
+                  {trialStarting ? t("starting") : t("startTrial")}
                 </button>
               </div>
             </div>
@@ -500,21 +527,21 @@ export default function Dashboard() {
 
         <section className="py-10">
           <h2 className="mb-6 text-sm font-medium text-neutral-500">
-            Your Streak
+            {t("streak")}
           </h2>
           <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6">
             <div className="flex items-baseline gap-2">
               <span className="text-4xl font-bold text-white">{streak}</span>
               <span className="text-sm text-neutral-500">
-                {streak === 1 ? "day" : "days"} in a row
+                {t("streakDays", { n: streak })}
               </span>
             </div>
             <p className="mt-3 text-xs leading-relaxed text-neutral-600">
               {streak === 0
-                ? "Start a new streak today. One session is all it takes."
+                ? t("streakTip0")
                 : streak < 7
-                  ? "You're building momentum. Stay consistent."
-                  : "Solid consistency. Keep it going."}
+                  ? t("streakTip1")
+                  : t("streakTip2")}
             </p>
           </div>
         </section>
@@ -531,7 +558,7 @@ export default function Dashboard() {
                 : "border-neutral-800/60 bg-[#0c0c10]"
             }`}>
               <p className="text-[11px] font-medium text-neutral-500">
-                Weekly Goal
+                {t("weeklyGoal")}
               </p>
               <div className="mt-2 flex items-baseline gap-1.5">
                 <span className={`text-2xl font-bold ${
@@ -542,10 +569,10 @@ export default function Dashboard() {
                 <span className="text-sm text-neutral-500">/ {weeklyGoal}</span>
               </div>
               {weeklyProgress >= weeklyGoal ? (
-                <p className="mt-2 text-xs text-indigo-400">Goal reached</p>
+                <p className="mt-2 text-xs text-indigo-400">{t("goalReached")}</p>
               ) : (
                 <p className="mt-2 text-xs text-neutral-600">
-                  {weeklyGoal - weeklyProgress} more day{weeklyGoal - weeklyProgress === 1 ? "" : "s"} to go
+                  {t("goalRemaining", { n: weeklyGoal - weeklyProgress })}
                 </p>
               )}
               {!goalPickerOpen ? (
@@ -553,7 +580,7 @@ export default function Dashboard() {
                   onClick={() => setGoalPickerOpen(true)}
                   className="mt-3 text-[11px] text-indigo-400 transition-colors hover:text-indigo-300"
                 >
-                  Change goal
+                  {t("changeGoal")}
                 </button>
               ) : (
                 <div className="mt-3 flex items-center gap-2">
@@ -584,16 +611,16 @@ export default function Dashboard() {
             {/* Consistency Score */}
             <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
               <p className="text-[11px] font-medium text-neutral-500">
-                Consistency Score
+                {t("consistencyScore")}
               </p>
               {userPlan === "free" ? (
                 <div className="mt-3">
                   <p className="text-sm text-neutral-600">—</p>
                   <p className="mt-2 text-[11px] text-neutral-600">
                     <Link href="/pricing" className="text-indigo-400 hover:text-indigo-300">
-                      Starter+
+                      {tCommon("starterPlus")}
                     </Link>{" "}
-                    to unlock
+                    {tCommon("toUnlock")}
                   </p>
                 </div>
               ) : (
@@ -606,7 +633,7 @@ export default function Dashboard() {
                     </span>
                     <span className="text-sm text-neutral-500">%</span>
                   </div>
-                  <p className="mt-2 text-xs text-neutral-600">Last 14 days</p>
+                  <p className="mt-2 text-xs text-neutral-600">{t("last14")}</p>
                 </>
               )}
             </div>
@@ -616,7 +643,7 @@ export default function Dashboard() {
         <div className="h-px w-full bg-neutral-800/60" />
 
         <section className="py-10">
-          <h2 className="mb-6 text-sm font-medium text-neutral-500">Today</h2>
+          <h2 className="mb-6 text-sm font-medium text-neutral-500">{t("todaySection")}</h2>
           <div
             className={`rounded-xl border p-6 ${
               trainedToday
@@ -643,10 +670,10 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-indigo-300">
-                    Training complete
+                    {t("trainedTitle")}
                   </p>
                   <p className="mt-0.5 text-xs text-neutral-500">
-                    You showed up today. Come back tomorrow.
+                    {t("trainedSub")}
                   </p>
                 </div>
               </div>
@@ -654,10 +681,10 @@ export default function Dashboard() {
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-sm font-medium text-white">
-                    Not trained yet
+                    {t("notTrainedTitle")}
                   </p>
                   <p className="mt-0.5 text-xs text-neutral-500">
-                    Your daily session is waiting. Even a short one counts.
+                    {t("notTrainedSub")}
                   </p>
                 </div>
                 <div className="h-2 w-2 shrink-0 rounded-full bg-neutral-700" />
@@ -671,7 +698,7 @@ export default function Dashboard() {
         {/* ── Today Summary ── */}
         <section className="py-10">
           <h2 className="mb-6 text-sm font-medium text-neutral-500">
-            Today Summary
+            {t("todaySummary")}
           </h2>
           <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
             <div className="flex flex-col gap-4">
@@ -679,7 +706,7 @@ export default function Dashboard() {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-[11px] font-medium text-neutral-500">
-                    Focus
+                    {t("focusLabel")}
                   </p>
                   {todayTags.length > 0 ? (
                     <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -694,7 +721,7 @@ export default function Dashboard() {
                     </div>
                   ) : (
                     <p className="mt-1 text-xs text-neutral-600">
-                      No focus tags yet
+                      {t("noFocusTags")}
                     </p>
                   )}
                 </div>
@@ -706,7 +733,7 @@ export default function Dashboard() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-[11px] font-medium text-neutral-500">
-                    Duration
+                    {t("duration")}
                   </p>
                   {todayDuration ? (
                     <p className="mt-1 text-sm font-medium text-white">
@@ -714,13 +741,13 @@ export default function Dashboard() {
                     </p>
                   ) : (
                     <p className="mt-1 text-xs text-neutral-600">
-                      Not logged yet
+                      {t("notLogged")}
                     </p>
                   )}
                 </div>
                 <div>
                   <p className="text-[11px] font-medium text-neutral-500">
-                    Rank ({currentRank?.playlist ?? "2v2"})
+                    {t("rankPlaylist", { playlist: currentRank?.playlist ?? "2v2" })}
                   </p>
                   {currentRank ? (
                     <p className="mt-1 text-sm font-medium text-white">
@@ -728,7 +755,7 @@ export default function Dashboard() {
                     </p>
                   ) : (
                     <p className="mt-1 text-xs text-neutral-600">
-                      Not set
+                      {t("notSet")}
                     </p>
                   )}
                 </div>
@@ -742,13 +769,13 @@ export default function Dashboard() {
                   href={`/training?plan=${userPlan}`}
                   className="text-[11px] font-medium text-indigo-400 transition-colors hover:text-indigo-300"
                 >
-                  {trainedToday ? "Edit session" : "Start session"} &rarr;
+                  {trainedToday ? t("editSession") : t("startSessionArrow")}
                 </Link>
                 <Link
                   href="/rank"
                   className="text-[11px] font-medium text-neutral-500 transition-colors hover:text-neutral-300"
                 >
-                  Update rank &rarr;
+                  {t("updateRank")}
                 </Link>
               </div>
             </div>
@@ -759,7 +786,7 @@ export default function Dashboard() {
 
         <section className="py-10">
           <h2 className="mb-6 text-sm font-medium text-neutral-500">
-            This Week
+            {t("thisWeek")}
           </h2>
           <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6">
             <div className="grid grid-cols-7 gap-2">
@@ -772,7 +799,7 @@ export default function Dashboard() {
                     key={label}
                     type="button"
                     aria-pressed={isDone}
-                    aria-label={`${label}${isToday ? " (today)" : ""}: ${isDone ? "completed" : "not completed"}`}
+                    aria-label={`${label}${isToday ? ` (${tCommon("today").toLowerCase()})` : ""}: ${isDone ? tCommon("completed").toLowerCase() : tCommon("notCompleted").toLowerCase()}`}
                     onClick={() => toggleDay(i)}
                     className={`flex flex-col items-center gap-2.5 cursor-pointer rounded-lg py-2 outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50 hover:bg-white/[0.03] ${
                       isToday ? "ring-1 ring-neutral-700" : ""
@@ -823,18 +850,18 @@ export default function Dashboard() {
               })}
             </div>
             <p className="mt-5 text-center text-xs text-neutral-600">
-              Trained {completedDays.size} / 7 days this week
+              {t("trainedWeek", { n: completedDays.size })}
             </p>
           </div>
           <div className="mt-4 flex items-center justify-between">
             <p className="text-xs text-neutral-700">
-              Click any day to toggle your training.
+              {t("clickToggle")}
             </p>
             <Link
               href={`/training/plan?plan=${userPlan}`}
               className="text-xs text-neutral-500 hover:text-neutral-300"
             >
-              View Weekly Plan &rarr;
+              {t("viewWeeklyPlan")}
             </Link>
           </div>
         </section>
@@ -845,7 +872,7 @@ export default function Dashboard() {
         {recommendedPack && (
           <section className="py-10">
             <h2 className="mb-6 text-sm font-medium text-neutral-500">
-              Recommended Pack
+              {t("recommendedPack")}
             </h2>
             <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
               <div className="flex items-start justify-between gap-4">
@@ -854,7 +881,7 @@ export default function Dashboard() {
                     {recommendedPack.pack.title}
                   </p>
                   <p className="mt-1 text-xs text-neutral-500">
-                    {recommendedPack.done} / {recommendedPack.total} drills completed
+                    {t("drillsCompleted", { done: recommendedPack.done, total: recommendedPack.total })}
                   </p>
                   <div className="mt-2 h-1.5 w-full rounded-full bg-neutral-800/60">
                     <div
@@ -871,7 +898,7 @@ export default function Dashboard() {
                   href="/packs"
                   className="shrink-0 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
                 >
-                  {recommendedPack.done > 0 ? "Continue Pack" : "Start Pack"}
+                  {recommendedPack.done > 0 ? t("continuePack") : t("startPack")}
                 </Link>
               </div>
             </div>
@@ -882,7 +909,7 @@ export default function Dashboard() {
 
         <section className="py-10">
           <h2 className="mb-6 text-sm font-medium text-neutral-500">
-            Training Library
+            {t("trainingLibrary")}
           </h2>
           <div className="flex flex-col gap-3">
             <Link
@@ -906,10 +933,10 @@ export default function Dashboard() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-white">
-                  Open Library
+                  {t("openLibrary")}
                 </p>
                 <p className="mt-0.5 text-xs text-neutral-500">
-                  Save drills and build your next session.
+                  {t("librarySub")}
                 </p>
               </div>
               <svg
@@ -943,10 +970,10 @@ export default function Dashboard() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-white">
-                  Training Packs
+                  {t("trainingPacks")}
                 </p>
                 <p className="mt-0.5 text-xs text-neutral-500">
-                  Curated drill bundles for specific skills.
+                  {t("packsSub")}
                 </p>
               </div>
               <svg
@@ -966,7 +993,7 @@ export default function Dashboard() {
 
         <section className="py-10">
           <h2 className="mb-6 text-sm font-medium text-neutral-500">
-            Season Updates
+            {t("seasonUpdates")}
           </h2>
           <Link
             href="/updates"
@@ -989,10 +1016,10 @@ export default function Dashboard() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-white">
-                Season Updates
+                {t("seasonUpdates")}
               </p>
               <p className="mt-0.5 text-xs text-neutral-500">
-                Patch notes, meta shifts, and what to train next.
+                {t("updatesSub")}
               </p>
             </div>
             <svg
@@ -1011,7 +1038,7 @@ export default function Dashboard() {
 
         <section className="py-10">
           <h2 className="mb-6 text-sm font-medium text-neutral-500">
-            Play Together
+            {t("playTogether")}
           </h2>
           <Link
             href="/matchmaking"
@@ -1034,10 +1061,10 @@ export default function Dashboard() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-white">
-                Find a Duo / Trio
+                {t("findTeam")}
               </p>
               <p className="mt-0.5 text-xs text-neutral-500">
-                Team up with players who match your rank and goals.
+                {t("teamSub")}
               </p>
             </div>
             <svg
@@ -1056,7 +1083,7 @@ export default function Dashboard() {
 
         <section className="py-10">
           <h2 className="mb-6 text-sm font-medium text-neutral-500">
-            Invite
+            {t("inviteSection")}
           </h2>
           <Link
             href="/invite"
@@ -1079,10 +1106,10 @@ export default function Dashboard() {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-white">
-                Invite a Teammate
+                {t("inviteTeammate")}
               </p>
               <p className="mt-0.5 text-xs text-neutral-500">
-                Both of you get +7 days Starter trial time.
+                {t("inviteSub")}
               </p>
             </div>
             <svg
@@ -1101,7 +1128,7 @@ export default function Dashboard() {
 
         <section className="py-10">
           <h2 className="mb-6 text-sm font-medium text-neutral-500">
-            Messages
+            {tNav("messages")}
           </h2>
           <Link
             href="/messages"
@@ -1131,11 +1158,11 @@ export default function Dashboard() {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-white">
                 {unreadCount > 0
-                  ? `You have ${unreadCount} unread message${unreadCount === 1 ? "" : "s"}`
-                  : "Inbox is clear"}
+                  ? t("unreadMessages", { n: unreadCount })
+                  : t("inboxClear")}
               </p>
               <p className="mt-0.5 text-xs text-neutral-500">
-                {unreadCount > 0 ? "Open Inbox" : "No new messages right now."}
+                {unreadCount > 0 ? t("openInbox") : t("noNewMessages")}
               </p>
             </div>
             <svg
@@ -1154,7 +1181,7 @@ export default function Dashboard() {
 
         <section className="py-10">
           <h2 className="mb-6 text-sm font-medium text-neutral-500">
-            Streak Protection
+            {t("streakProtection")}
           </h2>
           <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6">
             <div className="flex items-center gap-3">
@@ -1175,10 +1202,10 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="text-sm font-medium text-white">
-                  1 Streak Save available this month
+                  {t("saveAvailable")}
                 </p>
                 <p className="mt-0.5 text-xs text-neutral-500">
-                  If you miss a day, use a save to keep your streak going.
+                  {t("saveSub")}
                 </p>
               </div>
             </div>
@@ -1187,13 +1214,13 @@ export default function Dashboard() {
                 href="/pricing"
                 className="flex h-9 items-center justify-center rounded-lg bg-indigo-600 px-4 text-xs font-semibold text-white hover:bg-indigo-500"
               >
-                Unlock Streak Protection
+                {t("unlockProtection")}
               </Link>
               <Link
                 href="/plans/starter"
                 className="text-xs text-neutral-500 hover:text-neutral-300"
               >
-                Learn more
+                {t("learnMore")}
               </Link>
             </div>
           </div>
@@ -1205,44 +1232,44 @@ export default function Dashboard() {
           <div className="flex flex-col gap-3">
             <Link
               href={`/training?plan=${userPlan}`}
-              className="flex h-11 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white hover:bg-indigo-500"
+              className="cta-glow flex h-11 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white hover:bg-indigo-500"
             >
               {trainedToday
-                ? "Review Training"
+                ? t("reviewTraining")
                 : focusGoal === "Mechanics"
-                  ? "Start Mechanics Session"
+                  ? t("mechanicsSession")
                   : focusGoal === "Game Sense"
-                    ? "Start Review Session"
+                    ? t("reviewSession")
                     : focusGoal === "Consistency"
-                      ? "Keep the streak alive"
+                      ? t("keepStreak")
                       : focusGoal === "Rank Up"
-                        ? "Start Ranked Prep Session"
-                        : "Go to Training"}
+                        ? t("rankedPrep")
+                        : t("goToTraining")}
             </Link>
             <Link
               href={`/training/plan?plan=${userPlan}`}
               className="flex h-11 items-center justify-center rounded-lg border border-neutral-800/60 text-sm font-medium text-neutral-400 hover:border-neutral-700 hover:text-neutral-300"
             >
-              Weekly Plan
+              {t("weeklyPlan")}
             </Link>
             <Link
               href="/progress"
               className="flex h-11 items-center justify-center rounded-lg border border-neutral-800/60 text-sm font-medium text-neutral-400 hover:border-neutral-700 hover:text-neutral-300"
             >
-              View Progress
+              {t("viewProgress")}
             </Link>
             <Link
               href="/library"
               className="flex h-11 items-center justify-center rounded-lg border border-neutral-800/60 text-sm font-medium text-neutral-400 hover:border-neutral-700 hover:text-neutral-300"
             >
-              Drill Library
+              {t("drillLibrary")}
             </Link>
             {!trainedToday && (
               <button
                 onClick={() => toggleDay(todayIndex)}
                 className="flex h-11 items-center justify-center rounded-lg border border-neutral-800/60 text-sm font-medium text-neutral-400 hover:border-neutral-700 hover:text-neutral-300"
               >
-                Mark today as done
+                {t("markDone")}
               </button>
             )}
           </div>
@@ -1253,12 +1280,12 @@ export default function Dashboard() {
         {/* ── Account ── */}
         <section className="py-10">
           <h2 className="mb-6 text-sm font-medium text-neutral-500">
-            Account
+            {t("account")}
           </h2>
           <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
             <div className="flex flex-col gap-3">
               <div>
-                <p className="text-[11px] font-medium text-neutral-500">Plan</p>
+                <p className="text-[11px] font-medium text-neutral-500">{t("plan")}</p>
                 <div className="mt-1 flex items-center gap-2">
                   <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium capitalize ${
                     userPlan === "pro"
@@ -1267,14 +1294,14 @@ export default function Dashboard() {
                         ? "bg-indigo-600/15 text-indigo-400"
                         : "bg-neutral-800 text-neutral-400"
                   }`}>
-                    {userPlan}{userProfile && isTrialActive(userProfile) ? " (Trial)" : ""}
+                    {userPlan}{userProfile && isTrialActive(userProfile) ? ` ${t("trialBadge")}` : ""}
                   </span>
                   {userPlan === "free" ? (
                     <Link
                       href="/pricing"
                       className="text-[11px] text-indigo-400 transition-colors hover:text-indigo-300"
                     >
-                      View Plans
+                      {tCommon("viewPlans")}
                     </Link>
                   ) : (
                     <button
@@ -1295,29 +1322,24 @@ export default function Dashboard() {
                       }}
                       className="text-[11px] text-indigo-400 transition-colors hover:text-indigo-300 disabled:text-neutral-600"
                     >
-                      {portalLoading ? "Loading…" : "Manage Subscription"}
+                      {portalLoading ? tCommon("loading") : t("manageSubscription")}
                     </button>
                   )}
                 </div>
                 {billingLabel && (
                   <p className="mt-1 text-[11px] text-neutral-500">
-                    Billing: <span className={
-                      billingLabel === "Active" ? "text-emerald-400" :
-                      billingLabel.startsWith("Cancels") ? "text-amber-400" :
-                      billingLabel === "Past due" ? "text-red-400" :
-                      "text-neutral-400"
-                    }>{billingLabel}</span>
+                    {t("billing")} <span className={billingColorClass()}>{renderBillingLabel()}</span>
                   </p>
                 )}
               </div>
               <div>
-                <p className="text-[11px] font-medium text-neutral-500">Email</p>
+                <p className="text-[11px] font-medium text-neutral-500">{t("email")}</p>
                 <p className="mt-0.5 text-sm text-white">
                   {userEmail ?? "—"}
                 </p>
               </div>
               <div>
-                <p className="text-[11px] font-medium text-neutral-500">User ID</p>
+                <p className="text-[11px] font-medium text-neutral-500">{t("userId")}</p>
                 <p className="mt-0.5 font-mono text-sm text-neutral-400">
                   {userId ? `${userId.slice(0, 8)}…` : "—"}
                 </p>
@@ -1333,7 +1355,7 @@ export default function Dashboard() {
             href="/"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            &larr; Back to home
+            {tCommon("backHome")}
           </Link>
         </footer>
       </div>

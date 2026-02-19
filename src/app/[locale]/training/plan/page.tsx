@@ -1,9 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/src/i18n/routing";
 import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { useTranslations } from "next-intl";
 import {
   DAY_LABELS,
   WEEKLY_PLANS,
@@ -25,6 +26,9 @@ export default function WeeklyPlanPage() {
 const TIERS: PlanTier[] = ["free", "starter", "pro"];
 
 function WeeklyPlanContent() {
+  const t = useTranslations("TrainingPlan");
+  const tNav = useTranslations("Nav");
+  const tCommon = useTranslations("Common");
   const searchParams = useSearchParams();
   const plan = parsePlanTier(searchParams.get("plan"));
   const weeklyPlan = WEEKLY_PLANS[plan];
@@ -44,25 +48,24 @@ function WeeklyPlanContent() {
             href="/dashboard"
             className="text-sm text-neutral-400 transition-colors hover:text-white"
           >
-            Dashboard
+            {tNav("dashboard")}
           </Link>
         </nav>
 
         <section className="pt-20 pb-10">
           <div className="mb-3 flex items-center gap-3">
             <p className="text-xs font-medium uppercase tracking-widest text-neutral-500">
-              Training
+              {t("label")}
             </p>
             <span className="rounded-full border border-neutral-800 bg-neutral-900 px-2.5 py-0.5 text-[10px] font-medium text-neutral-400">
-              Plan: {PLAN_TIER_LABELS[plan]}
+              {t("planLabel", { label: PLAN_TIER_LABELS[plan] })}
             </span>
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Weekly Training Plan
+            {t("title")}
           </h1>
           <p className="mt-4 text-base leading-relaxed text-neutral-400">
-            Structured practice beats random grinding. Follow this plan to
-            build real skill — one focused session at a time.
+            {t("desc")}
           </p>
         </section>
 
@@ -109,7 +112,7 @@ function WeeklyPlanContent() {
                       </span>
                       {isToday && (
                         <span className="rounded-full bg-indigo-600/20 px-2 py-0.5 text-[10px] font-medium text-indigo-400">
-                          Today
+                          {t("todayBadge")}
                         </span>
                       )}
                     </div>
@@ -140,7 +143,7 @@ function WeeklyPlanContent() {
                       href={`/training?plan=${plan}#${day.blockSlug}`}
                       className="mt-3 inline-block text-xs font-medium text-indigo-400 transition-colors hover:text-indigo-300"
                     >
-                      Start this session &rarr;
+                      {t("startSession")}
                     </Link>
                   )}
                 </div>
@@ -157,13 +160,13 @@ function WeeklyPlanContent() {
               href={`/training?plan=${plan}#${getTodayPlan(plan).blockSlug}`}
               className="flex h-11 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white hover:bg-indigo-500"
             >
-              Start Today&apos;s Session
+              {t("startToday")}
             </Link>
             <Link
               href="/dashboard"
               className="flex h-11 items-center justify-center rounded-lg border border-neutral-800/60 text-sm font-medium text-neutral-400 hover:border-neutral-700 hover:text-neutral-300"
             >
-              Back to Dashboard
+              {t("backDashboard")}
             </Link>
           </div>
         </section>
@@ -175,14 +178,14 @@ function WeeklyPlanContent() {
             href="/dashboard"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            Dashboard
+            {tNav("dashboard")}
           </Link>
           <span className="text-neutral-800">&middot;</span>
           <Link
             href="/"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            Home
+            {tCommon("home")}
           </Link>
         </footer>
       </div>

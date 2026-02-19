@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { Link } from "@/src/i18n/routing";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { isSupabaseConfigured } from "@/src/lib/supabase/validate";
 import CopyLinkButton from "./CopyLinkButton";
 
@@ -18,9 +19,11 @@ interface PublicProfile {
 export default async function PublicProfilePage({
   params,
 }: {
-  params: Promise<{ username: string }>;
+  params: Promise<{ username: string; locale: string }>;
 }) {
-  const { username } = await params;
+  const { username, locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations("PublicProfile");
 
   let profile: PublicProfile | null = null;
 
@@ -67,15 +70,15 @@ export default async function PublicProfilePage({
                 />
               </svg>
             </div>
-            <h1 className="text-xl font-bold text-white">Profile not found</h1>
+            <h1 className="text-xl font-bold text-white">{t("notFoundTitle")}</h1>
             <p className="mt-3 text-sm text-neutral-400">
-              This profile doesn&apos;t exist or isn&apos;t public yet.
+              {t("notFoundSub")}
             </p>
             <Link
               href="/pricing"
               className="mt-8 flex h-11 items-center justify-center rounded-lg bg-indigo-600 px-6 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
             >
-              Try AERIX
+              {t("tryAerix")}
             </Link>
           </section>
         </div>
@@ -88,6 +91,10 @@ export default async function PublicProfilePage({
       ? `${profile.rank_tier} ${profile.rank_division}`
       : profile.rank_tier
     : null;
+
+  const memberDate = new Date(profile.created_at);
+  const memberMonth = memberDate.toLocaleDateString(locale, { month: "short" });
+  const memberYear = memberDate.getFullYear().toString();
 
   return (
     <main className="min-h-screen bg-[#060608] text-white">
@@ -107,14 +114,10 @@ export default async function PublicProfilePage({
             {profile.username}
           </h1>
           <p className="mt-2 text-sm text-neutral-500">
-            Rocket League grind &mdash; tracked on AERIX
+            {t("tagline")}
           </p>
           <p className="mt-1 text-xs text-neutral-600">
-            Member since{" "}
-            {new Date(profile.created_at).toLocaleDateString("en-US", {
-              month: "short",
-              year: "numeric",
-            })}
+            {t("memberSince", { month: memberMonth, year: memberYear })}
           </p>
         </section>
 
@@ -125,7 +128,7 @@ export default async function PublicProfilePage({
           <div className="grid grid-cols-2 gap-4">
             <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
               <p className="text-[11px] font-medium text-neutral-500">
-                Current Streak
+                {t("currentStreak")}
               </p>
               <div className="mt-2 flex items-baseline gap-1.5">
                 <span
@@ -135,25 +138,25 @@ export default async function PublicProfilePage({
                 >
                   {profile.current_streak}
                 </span>
-                <span className="text-sm text-neutral-500">days</span>
+                <span className="text-sm text-neutral-500">{t("days")}</span>
               </div>
             </div>
 
             <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
               <p className="text-[11px] font-medium text-neutral-500">
-                Weekly Goal
+                {t("weeklyGoal")}
               </p>
               <div className="mt-2 flex items-baseline gap-1.5">
                 <span className="text-2xl font-bold text-white">
                   {profile.weekly_goal_days}
                 </span>
-                <span className="text-sm text-neutral-500">days/week</span>
+                <span className="text-sm text-neutral-500">{t("daysWeek")}</span>
               </div>
             </div>
 
             <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
               <p className="text-[11px] font-medium text-neutral-500">
-                Consistency
+                {t("consistency")}
               </p>
               <div className="mt-2 flex items-baseline gap-1.5">
                 <span
@@ -169,7 +172,7 @@ export default async function PublicProfilePage({
 
             <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
               <p className="text-[11px] font-medium text-neutral-500">
-                Packs Completed
+                {t("packsCompleted")}
               </p>
               <div className="mt-2 flex items-baseline gap-1.5">
                 <span className="text-2xl font-bold text-white">
@@ -180,7 +183,7 @@ export default async function PublicProfilePage({
 
             {rankDisplay && (
               <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
-                <p className="text-[11px] font-medium text-neutral-500">Rank</p>
+                <p className="text-[11px] font-medium text-neutral-500">{t("rankLabel")}</p>
                 <p className="mt-2 text-lg font-bold text-white">
                   {rankDisplay}
                 </p>
@@ -196,7 +199,7 @@ export default async function PublicProfilePage({
           <>
             <section className="py-10">
               <h2 className="mb-6 text-sm font-medium text-neutral-500">
-                Focus
+                {t("focus")}
               </h2>
               <div className="flex flex-wrap gap-2">
                 {profile.focus_goal && (
@@ -224,7 +227,7 @@ export default async function PublicProfilePage({
               href="/pricing"
               className="flex h-11 items-center justify-center rounded-lg border border-neutral-800/60 text-sm font-medium text-neutral-400 transition-colors hover:border-neutral-700 hover:text-neutral-300"
             >
-              Try AERIX
+              {t("tryAerix")}
             </Link>
           </div>
         </section>
@@ -236,7 +239,7 @@ export default async function PublicProfilePage({
             href="/"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            AERIX &mdash; Train smarter
+            {t("footer")}
           </Link>
         </footer>
       </div>

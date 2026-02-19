@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/src/i18n/routing";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { createClient } from "@/src/lib/supabase/client";
 import { fetchUserPlan } from "@/src/lib/user-plan";
@@ -35,6 +36,9 @@ const SECTION_TAG: Record<string, string> = {
 };
 
 export default function LibraryPage() {
+  const t = useTranslations("Library");
+  const tCommon = useTranslations("Common");
+  const tNav = useTranslations("Nav");
   const [plan, setPlan] = useState<PlanTier>("free");
   const [signedIn, setSignedIn] = useState(false);
   const [ready, setReady] = useState(false);
@@ -70,13 +74,13 @@ export default function LibraryPage() {
       setSaves(next);
       setLocalSaves(next);
       if (signedIn) deleteDrillSave(drillId);
-      toast("Drill removed");
+      toast(t("drillRemoved"));
     } else {
       if (saves.length >= saveLimit) {
         toast(
           saveLimit === 5
-            ? "Free limit reached (5). Upgrade for more."
-            : `Save limit reached (${saveLimit}).`
+            ? t("freeLimitSave")
+            : t("saveLimitReached", { limit: saveLimit })
         );
         return;
       }
@@ -84,20 +88,20 @@ export default function LibraryPage() {
       setSaves(next);
       setLocalSaves(next);
       if (signedIn) upsertDrillSave(drillId);
-      toast("Drill saved");
+      toast(t("drillSaved"));
     }
   }
 
   function addToQueue(drillId: string) {
     if (queue.includes(drillId)) {
-      toast("Already in queue");
+      toast(t("alreadyQueued"));
       return;
     }
     if (queue.length >= queueLimit) {
       toast(
         queueLimit === 1
-          ? "Free plan: 1 queued drill. Upgrade for more."
-          : `Queue limit reached (${queueLimit}).`
+          ? t("freeLimitQueue")
+          : t("queueLimitReached", { limit: queueLimit })
       );
       return;
     }
@@ -105,7 +109,7 @@ export default function LibraryPage() {
     setQueue(next);
     setLocalQueue(next);
     if (signedIn) replaceQueue(next);
-    toast("Added to queue");
+    toast(t("addedToQueue"));
   }
 
   function removeFromQueue(drillId: string) {
@@ -132,20 +136,20 @@ export default function LibraryPage() {
             href="/"
             className="text-sm font-semibold tracking-[0.2em] uppercase text-white"
           >
-            Aerix
+            {tCommon("aerix")}
           </Link>
           <div className="flex items-center gap-4">
             <Link
               href="/dashboard"
               className="text-sm text-neutral-400 transition-colors hover:text-white"
             >
-              Dashboard
+              {tNav("dashboard")}
             </Link>
             <Link
               href="/training"
               className="text-sm text-neutral-400 transition-colors hover:text-white"
             >
-              Training
+              {tNav("training")}
             </Link>
           </div>
         </nav>
@@ -153,31 +157,31 @@ export default function LibraryPage() {
         {/* Header */}
         <section className="pt-20 pb-10">
           <p className="mb-3 text-xs font-medium uppercase tracking-widest text-neutral-500">
-            Training Library
+            {t("label")}
           </p>
           <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Your drills.
+            {t("title")}
           </h1>
           <p className="mt-4 text-base leading-relaxed text-neutral-400">
-            Save drills you like. Queue up your next session.
+            {t("desc")}
           </p>
           <p className="mt-3 text-xs text-neutral-600">
-            Looking for curated bundles?{" "}
+            {t("packsCrossLink")}{" "}
             <Link
               href="/packs"
               className="text-indigo-400 hover:text-indigo-300"
             >
-              Browse Training Packs &rarr;
+              {t("browsePacks")}
             </Link>
           </p>
           {ready && !signedIn && (
             <p className="mt-3 text-xs text-neutral-600">
-              Preview mode &mdash; local only.{" "}
+              {tCommon("previewLocal")}{" "}
               <Link
                 href="/login?returnTo=/library"
                 className="text-indigo-400 hover:text-indigo-300"
               >
-                Sign in to sync.
+                {tCommon("signInSync")}
               </Link>
             </p>
           )}
@@ -188,9 +192,9 @@ export default function LibraryPage() {
         {/* Tabs */}
         <div className="flex gap-1 py-4">
           {([
-            ["catalog", "All Drills"],
-            ["saved", `Saved (${saves.length})`],
-            ["queue", `Queue (${queue.length})`],
+            ["catalog", t("tabAll")],
+            ["saved", t("tabSaved", { n: saves.length })],
+            ["queue", t("tabQueue", { n: queue.length })],
           ] as [Tab, string][]).map(([key, label]) => (
             <button
               key={key}
@@ -214,10 +218,10 @@ export default function LibraryPage() {
           <section className="py-8">
             <div className="mb-4 flex items-center justify-between">
               <p className="text-xs text-neutral-600">
-                {ALL_DRILLS.length} drills across all plans
+                {t("catalogSub", { n: ALL_DRILLS.length })}
               </p>
               <p className="text-[11px] text-neutral-700">
-                Saves: {saves.length}/{saveLimit === Infinity ? "∞" : saveLimit}
+                {t("savesCount", { used: saves.length, limit: saveLimit === Infinity ? "∞" : saveLimit })}
               </p>
             </div>
             <div className="flex flex-col gap-3">
@@ -241,24 +245,24 @@ export default function LibraryPage() {
             {savedDrills.length === 0 ? (
               <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6 text-center">
                 <p className="text-sm text-neutral-500">
-                  No saved drills yet. Browse the catalog to save some.
+                  {t("savedEmpty")}
                 </p>
                 <button
                   type="button"
                   onClick={() => setTab("catalog")}
                   className="mt-4 text-xs font-medium text-indigo-400 hover:text-indigo-300"
                 >
-                  Go to catalog &rarr;
+                  {t("goToCatalog")}
                 </button>
               </div>
             ) : (
               <>
                 <p className="mb-4 text-xs text-neutral-600">
-                  {saves.length}/{saveLimit === Infinity ? "∞" : saveLimit} saved
+                  {t("savedCount", { used: saves.length, limit: saveLimit === Infinity ? "∞" : saveLimit })}
                   {plan === "free" && (
                     <> &middot;{" "}
                       <Link href="/pricing" className="text-indigo-400 hover:text-indigo-300">
-                        Upgrade for more
+                        {tCommon("upgradeMore")}
                       </Link>
                     </>
                   )}
@@ -286,24 +290,24 @@ export default function LibraryPage() {
             {queuedDrills.length === 0 ? (
               <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6 text-center">
                 <p className="text-sm text-neutral-500">
-                  Your next session queue is empty.
+                  {t("queueEmpty")}
                 </p>
                 <button
                   type="button"
                   onClick={() => setTab("catalog")}
                   className="mt-4 text-xs font-medium text-indigo-400 hover:text-indigo-300"
                 >
-                  Add drills from catalog &rarr;
+                  {t("addFromCatalog")}
                 </button>
               </div>
             ) : (
               <>
                 <p className="mb-4 text-xs text-neutral-600">
-                  {queue.length}/{queueLimit} queued
+                  {t("queueCount", { used: queue.length, limit: queueLimit })}
                   {plan === "free" && queue.length >= queueLimit && (
                     <> &middot;{" "}
                       <span className="rounded-full border border-neutral-800 bg-neutral-900 px-2 py-0.5 text-[9px] font-medium text-neutral-500">
-                        Starter+
+                        {tCommon("starterPlus")}
                       </span>
                     </>
                   )}
@@ -330,7 +334,7 @@ export default function LibraryPage() {
                         onClick={() => removeFromQueue(drill.id)}
                         className="shrink-0 text-[11px] text-neutral-600 transition-colors hover:text-red-400"
                       >
-                        Remove
+                        {tCommon("remove")}
                       </button>
                     </div>
                   ))}
@@ -339,7 +343,7 @@ export default function LibraryPage() {
                   href="/training?mode=queue"
                   className="mt-6 flex h-11 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
                 >
-                  Start Session
+                  {tCommon("startSession")}
                 </Link>
               </>
             )}
@@ -353,21 +357,21 @@ export default function LibraryPage() {
             href="/dashboard"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            Dashboard
+            {tNav("dashboard")}
           </Link>
           <span className="text-neutral-800">&middot;</span>
           <Link
             href="/training"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            Training
+            {tNav("training")}
           </Link>
           <span className="text-neutral-800">&middot;</span>
           <Link
             href="/"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            Home
+            {tNav("home")}
           </Link>
         </footer>
       </div>
@@ -392,6 +396,7 @@ function DrillCard({
   onToggleSave: () => void;
   onAddToQueue: () => void;
 }) {
+  const t = useTranslations("Library");
   const tier = drillTier(drill.id);
   const tag = SECTION_TAG[drill.section] ?? drill.section;
 
@@ -454,7 +459,7 @@ function DrillCard({
               : "border-neutral-800/60 text-neutral-500 hover:border-neutral-700 hover:text-neutral-300"
           }`}
         >
-          {isSaved ? "Saved" : "Save"}
+          {isSaved ? t("saved") : t("save")}
         </button>
         <button
           type="button"
@@ -466,7 +471,7 @@ function DrillCard({
               : "border-neutral-800/60 text-neutral-500 hover:border-neutral-700 hover:text-neutral-300"
           }`}
         >
-          {isQueued ? "Queued" : "+ Queue"}
+          {isQueued ? t("queued") : t("addQueue")}
         </button>
       </div>
     </div>

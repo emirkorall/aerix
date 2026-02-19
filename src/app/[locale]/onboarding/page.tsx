@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/src/i18n/routing";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/src/lib/supabase/client";
 import { saveOnboardingProfile, fetchOnboardingStatus } from "@/src/lib/onboarding";
 
@@ -36,6 +37,8 @@ export default function OnboardingPage() {
 }
 
 function OnboardingContent() {
+  const t = useTranslations("Onboarding");
+  const tCommon = useTranslations("Common");
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
@@ -94,7 +97,7 @@ function OnboardingContent() {
     return (
       <main className="min-h-screen bg-[#060608] text-white">
         <div className="mx-auto max-w-xl px-6 py-20">
-          <p className="text-sm text-neutral-600">Loading…</p>
+          <p className="text-sm text-neutral-600">{tCommon("loading")}</p>
         </div>
       </main>
     );
@@ -120,13 +123,13 @@ function OnboardingContent() {
             }}
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            Sign out
+            {tCommon("signOut")}
           </button>
         </nav>
 
         <section className="pt-20 pb-10">
           <p className="mb-3 text-xs font-medium uppercase tracking-widest text-neutral-500">
-            Step {step} of 3
+            {t("stepOf", { n: step })}
           </p>
           {/* Progress bar */}
           <div className="mb-8 flex gap-1.5">
@@ -144,10 +147,10 @@ function OnboardingContent() {
           {step === 1 && (
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-                What&apos;s your main goal?
+                {t("goalTitle")}
               </h1>
               <p className="mt-3 text-sm leading-relaxed text-neutral-400">
-                Pick what matters most right now. You can always change this later.
+                {t("goalSub")}
               </p>
 
               <div className="mt-8 flex flex-col gap-3">
@@ -172,7 +175,7 @@ function OnboardingContent() {
                   onClick={() => setStep(2)}
                   className="flex h-11 items-center justify-center rounded-lg bg-indigo-600 px-8 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
                 >
-                  Next
+                  {tCommon("next")}
                 </button>
               </div>
             </div>
@@ -182,10 +185,10 @@ function OnboardingContent() {
           {step === 2 && (
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-                Which playlist do you play most?
+                {t("playlistTitle")}
               </h1>
               <p className="mt-3 text-sm leading-relaxed text-neutral-400">
-                We&apos;ll tailor your training plan around this mode.
+                {t("playlistSub")}
               </p>
 
               <div className="mt-8 flex flex-col gap-3">
@@ -210,13 +213,13 @@ function OnboardingContent() {
                   onClick={() => setStep(1)}
                   className="text-sm text-neutral-500 transition-colors hover:text-neutral-300"
                 >
-                  Back
+                  {tCommon("back")}
                 </button>
                 <button
                   onClick={() => setStep(3)}
                   className="flex h-11 items-center justify-center rounded-lg bg-indigo-600 px-8 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
                 >
-                  Next
+                  {tCommon("next")}
                 </button>
               </div>
             </div>
@@ -226,10 +229,10 @@ function OnboardingContent() {
           {step === 3 && (
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-                What&apos;s your current rank?
+                {t("rankTitle")}
               </h1>
               <p className="mt-3 text-sm leading-relaxed text-neutral-400">
-                Optional — helps us recommend the right drills for your level.
+                {t("rankSub")}
               </p>
 
               {!skipRank && (
@@ -240,7 +243,7 @@ function OnboardingContent() {
                       htmlFor="ob-tier"
                       className="mb-1.5 block text-[11px] font-medium text-neutral-500"
                     >
-                      Rank
+                      {t("rankLabel")}
                     </label>
                     <select
                       id="ob-tier"
@@ -260,7 +263,7 @@ function OnboardingContent() {
                   {!isSSL && (
                     <div>
                       <p className="mb-2 text-[11px] font-medium text-neutral-500">
-                        Division
+                        {t("division")}
                       </p>
                       <div className="flex gap-2">
                         {DIVISIONS.map((d) => (
@@ -284,7 +287,7 @@ function OnboardingContent() {
                   {/* Preview */}
                   <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-4">
                     <p className="text-[11px] font-medium text-neutral-500">
-                      Your rank
+                      {t("yourRank")}
                     </p>
                     <p className="mt-1 text-lg font-bold text-white">
                       {isSSL ? "Supersonic Legend" : `${tier} ${division}`}
@@ -299,7 +302,7 @@ function OnboardingContent() {
               {skipRank && (
                 <div className="mt-8 rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
                   <p className="text-sm text-neutral-400">
-                    No worries — you can set your rank anytime from the dashboard.
+                    {t("skipNote")}
                   </p>
                 </div>
               )}
@@ -307,10 +310,10 @@ function OnboardingContent() {
               {/* Referral code */}
               <div className="mt-8 rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
                 <p className="text-sm font-medium text-white">
-                  Referral code <span className="text-neutral-600">(optional)</span>
+                  {t("referralCode")} <span className="text-neutral-600">{t("referralOptional")}</span>
                 </p>
                 <p className="mt-0.5 text-xs text-neutral-600">
-                  Got a code from a friend? Both of you get +7 days Starter.
+                  {t("referralSub")}
                 </p>
                 <div className="mt-3 flex gap-2">
                   <input
@@ -322,7 +325,7 @@ function OnboardingContent() {
                       setRefError(null);
                     }}
                     disabled={refResult === "success"}
-                    placeholder="e.g. abc12xyz"
+                    placeholder={t("referralPlaceholder")}
                     maxLength={10}
                     className="flex-1 rounded-lg border border-neutral-800/60 bg-[#060608] px-3 py-2 text-sm text-white outline-none focus:border-neutral-700 disabled:opacity-50"
                   />
@@ -343,11 +346,11 @@ function OnboardingContent() {
                         } else {
                           const data = await res.json().catch(() => ({}));
                           setRefResult("error");
-                          setRefError(data.error ?? "Failed to apply code.");
+                          setRefError(data.error ?? t("applyFailed"));
                         }
                       } catch {
                         setRefResult("error");
-                        setRefError("Network error.");
+                        setRefError(t("networkError"));
                       }
                       setRefApplying(false);
                     }}
@@ -357,7 +360,7 @@ function OnboardingContent() {
                         : "bg-indigo-600 text-white hover:bg-indigo-500"
                     }`}
                   >
-                    {refApplying ? "Applying\u2026" : refResult === "success" ? "+7 days unlocked!" : "Apply"}
+                    {refApplying ? t("applying") : refResult === "success" ? t("applied") : t("apply")}
                   </button>
                 </div>
                 {refError && (
@@ -370,7 +373,7 @@ function OnboardingContent() {
                   onClick={() => setStep(2)}
                   className="text-sm text-neutral-500 transition-colors hover:text-neutral-300"
                 >
-                  Back
+                  {tCommon("back")}
                 </button>
                 <div className="flex items-center gap-3">
                   {!skipRank && (
@@ -378,7 +381,7 @@ function OnboardingContent() {
                       onClick={() => setSkipRank(true)}
                       className="text-sm text-neutral-500 transition-colors hover:text-neutral-300"
                     >
-                      Skip
+                      {t("skip")}
                     </button>
                   )}
                   {skipRank && (
@@ -386,7 +389,7 @@ function OnboardingContent() {
                       onClick={() => setSkipRank(false)}
                       className="text-sm text-neutral-500 transition-colors hover:text-neutral-300"
                     >
-                      Add rank
+                      {t("addRank")}
                     </button>
                   )}
                   <button
@@ -394,7 +397,7 @@ function OnboardingContent() {
                     disabled={saving}
                     className="flex h-11 items-center justify-center rounded-lg bg-indigo-600 px-8 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:opacity-50"
                   >
-                    {saving ? "Saving\u2026" : "Finish"}
+                    {saving ? tCommon("saving") : t("finish")}
                   </button>
                 </div>
               </div>

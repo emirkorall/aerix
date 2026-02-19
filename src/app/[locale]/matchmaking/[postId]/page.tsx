@@ -1,9 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/src/i18n/routing";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/src/lib/supabase/client";
 import { fetchUserPlan } from "@/src/lib/user-plan";
 import type { PlanTier } from "@/src/lib/weekly-plan";
@@ -20,6 +21,9 @@ import {
 import type { ReportReason } from "@/src/lib/supabase/moderation";
 
 export default function PostDetailPage() {
+  const t = useTranslations("MatchmakingPost");
+  const tCommon = useTranslations("Common");
+  const tNav = useTranslations("Nav");
   const params = useParams();
   const router = useRouter();
   const postId = params.postId as string;
@@ -80,9 +84,9 @@ export default function PostDetailPage() {
     if (result.ok) {
       setShowReport(false);
       setReportDetails("");
-      toast("Report submitted.");
+      toast(tCommon("reportSubmitted"));
     } else {
-      toast(result.error ?? "Report failed.");
+      toast(result.error ?? tCommon("reportFailed"));
     }
   }
 
@@ -91,9 +95,9 @@ export default function PostDetailPage() {
     const result = await blockUser(post.user_id);
     if (result.ok) {
       setIsBlocked(true);
-      toast("User blocked.");
+      toast(tCommon("userBlocked"));
     } else {
-      toast(result.error ?? "Failed to block.");
+      toast(result.error ?? tCommon("blockFailed"));
     }
   }
 
@@ -116,34 +120,34 @@ export default function PostDetailPage() {
               href="/matchmaking"
               className="text-sm text-neutral-400 transition-colors hover:text-white"
             >
-              Back to Feed
+              {t("backToFeed")}
             </Link>
             <Link
               href="/messages"
               className="text-sm text-neutral-400 transition-colors hover:text-white"
             >
-              Messages
+              {tNav("messages")}
             </Link>
           </div>
         </nav>
 
         <section className="pt-20 pb-10">
           {loading ? (
-            <p className="text-sm text-neutral-600">Loading...</p>
+            <p className="text-sm text-neutral-600">{tCommon("loading")}</p>
           ) : !post ? (
             <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6 text-center">
-              <p className="text-sm text-neutral-500">Post not found.</p>
+              <p className="text-sm text-neutral-500">{t("notFound")}</p>
               <Link
                 href="/matchmaking"
                 className="mt-4 inline-block text-xs font-medium text-indigo-400 hover:text-indigo-300"
               >
-                Back to feed &rarr;
+                {t("backToFeedLink")}
               </Link>
             </div>
           ) : isBlocked ? (
             <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6 text-center">
               <p className="text-sm text-neutral-500">
-                You blocked this player.
+                {t("blockedPlayer")}
               </p>
               <button
                 type="button"
@@ -151,11 +155,11 @@ export default function PostDetailPage() {
                   if (!post) return;
                   await unblockUser(post.user_id);
                   setIsBlocked(false);
-                  toast("User unblocked.");
+                  toast(t("userUnblocked"));
                 }}
                 className="mt-4 inline-block rounded-lg border border-neutral-800/60 px-3 py-1.5 text-xs font-medium text-neutral-400 transition-colors hover:border-neutral-700 hover:text-white"
               >
-                Unblock
+                {t("unblock")}
               </button>
             </div>
           ) : (
@@ -169,7 +173,7 @@ export default function PostDetailPage() {
                 </span>
                 {post.status === "closed" && (
                   <span className="rounded-full bg-neutral-800 px-2 py-0.5 text-[10px] font-medium text-neutral-500">
-                    Closed
+                    {t("closed")}
                   </span>
                 )}
               </div>
@@ -192,12 +196,13 @@ export default function PostDetailPage() {
               </div>
 
               <p className="mt-3 text-[10px] text-neutral-600">
-                Posted{" "}
-                {new Date(post.created_at).toLocaleDateString(undefined, {
-                  month: "short",
-                  day: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
+                {t("postedOn", {
+                  date: new Date(post.created_at).toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }),
                 })}
               </p>
 
@@ -205,11 +210,11 @@ export default function PostDetailPage() {
               <div className="mt-6">
                 {post.status === "closed" ? (
                   <p className="text-xs text-neutral-500">
-                    This post has been closed.
+                    {t("postClosed")}
                   </p>
                 ) : isOwn ? (
                   <p className="text-xs text-neutral-500">
-                    This is your post. Others will contact you via messages.
+                    {t("ownPost")}
                   </p>
                 ) : allowed ? (
                   <button
@@ -217,18 +222,18 @@ export default function PostDetailPage() {
                     disabled={contacting}
                     className="flex h-11 w-full items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:opacity-50"
                   >
-                    {contacting ? "Sending request..." : "Request to Play"}
+                    {contacting ? t("sendingRequest") : t("requestToPlay")}
                   </button>
                 ) : (
                   <div className="text-center">
                     <p className="text-xs text-neutral-500">
-                      Upgrade to Starter+ to contact players.
+                      {t("upgradeCta")}
                     </p>
                     <Link
                       href="/pricing"
                       className="mt-2 inline-block text-xs font-medium text-indigo-400 hover:text-indigo-300"
                     >
-                      View Plans &rarr;
+                      {t("viewPlansLink")}
                     </Link>
                   </div>
                 )}
@@ -242,7 +247,7 @@ export default function PostDetailPage() {
                     onClick={() => setShowReport((v) => !v)}
                     className="rounded-lg border border-neutral-800/60 px-3 py-1.5 text-[11px] font-medium text-neutral-600 transition-colors hover:border-neutral-700 hover:text-neutral-400"
                   >
-                    Report
+                    {tCommon("report")}
                   </button>
                   {!confirmBlock ? (
                     <button
@@ -250,7 +255,7 @@ export default function PostDetailPage() {
                       onClick={() => setConfirmBlock(true)}
                       className="rounded-lg border border-neutral-800/60 px-3 py-1.5 text-[11px] font-medium text-neutral-600 transition-colors hover:border-red-500/30 hover:text-red-400"
                     >
-                      Block User
+                      {t("blockUser")}
                     </button>
                   ) : (
                     <button
@@ -261,7 +266,7 @@ export default function PostDetailPage() {
                       }}
                       className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-[11px] font-medium text-red-400 transition-colors hover:bg-red-500/20"
                     >
-                      Confirm Block
+                      {tCommon("confirmBlock")}
                     </button>
                   )}
                 </div>
@@ -271,7 +276,7 @@ export default function PostDetailPage() {
               {showReport && (
                 <div className="mt-3 rounded-lg border border-neutral-800/60 bg-[#0a0a0e] p-3">
                   <p className="mb-2 text-[11px] font-medium text-neutral-400">
-                    Why are you reporting this post?
+                    {tCommon("reportLabel")}
                   </p>
                   <select
                     value={reportReason}
@@ -291,7 +296,7 @@ export default function PostDetailPage() {
                     onChange={(e) =>
                       setReportDetails(e.target.value.slice(0, 500))
                     }
-                    placeholder="Additional details (optional)"
+                    placeholder={tCommon("reportDetails")}
                     rows={2}
                     className="mt-2 w-full rounded-lg border border-neutral-800/60 bg-[#0c0c10] px-2.5 py-1.5 text-xs text-white placeholder:text-neutral-700 outline-none focus:border-indigo-500/40 resize-none"
                   />
@@ -301,13 +306,13 @@ export default function PostDetailPage() {
                       disabled={reportSubmitting}
                       className="rounded-lg bg-red-500/20 px-3 py-1.5 text-[11px] font-medium text-red-300 transition-colors hover:bg-red-500/30 disabled:opacity-50"
                     >
-                      {reportSubmitting ? "Sending..." : "Submit Report"}
+                      {reportSubmitting ? tCommon("sendingReport") : tCommon("submitReport")}
                     </button>
                     <button
                       onClick={() => setShowReport(false)}
                       className="text-[11px] text-neutral-600 hover:text-neutral-400"
                     >
-                      Cancel
+                      {tCommon("cancel")}
                     </button>
                   </div>
                 </div>
@@ -323,12 +328,11 @@ export default function PostDetailPage() {
             href="/matchmaking"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            &larr; Back to matchmaking
+            &larr; {tNav("matchmaking")}
           </Link>
         </footer>
       </div>
 
-      {/* Toast */}
     </main>
   );
 }

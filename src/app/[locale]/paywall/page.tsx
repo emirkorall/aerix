@@ -1,6 +1,16 @@
-import Link from "next/link";
+import { Link } from "@/src/i18n/routing";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 
-export default function PaywallPage() {
+export default async function PaywallPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations("Paywall");
+  const tCommon = await getTranslations("Common");
+
   return (
     <main className="min-h-screen bg-[#060608] text-white">
       <div className="mx-auto max-w-xl px-6">
@@ -15,7 +25,7 @@ export default function PaywallPage() {
             href="/pricing"
             className="text-sm text-neutral-400 transition-colors hover:text-white"
           >
-            Plans
+            {tCommon("plans")}
           </Link>
         </nav>
 
@@ -36,11 +46,10 @@ export default function PaywallPage() {
             </svg>
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-            This feature is part of a paid plan
+            {t("title")}
           </h1>
           <p className="mt-4 max-w-sm text-sm leading-relaxed text-neutral-400">
-            Some features — like finding teammates and community tools — are
-            available on Starter and Pro plans.
+            {t("desc")}
           </p>
         </section>
 
@@ -48,7 +57,7 @@ export default function PaywallPage() {
 
         <section className="py-10">
           <h2 className="mb-5 text-sm font-medium text-neutral-500">
-            Why is this paid?
+            {t("whyPaid")}
           </h2>
           <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
             <ul className="flex flex-col gap-4">
@@ -70,11 +79,10 @@ export default function PaywallPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-white">
-                    Quality over quantity
+                    {t("reason1Title")}
                   </p>
                   <p className="mt-0.5 text-xs leading-relaxed text-neutral-500">
-                    Paid features help us keep the community focused on players
-                    who genuinely want to improve together.
+                    {t("reason1Desc")}
                   </p>
                 </div>
               </li>
@@ -96,11 +104,10 @@ export default function PaywallPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-white">
-                    Better coordination
+                    {t("reason2Title")}
                   </p>
                   <p className="mt-0.5 text-xs leading-relaxed text-neutral-500">
-                    Matchmaking and team features need active maintenance.
-                    Subscriptions let us keep them running smoothly.
+                    {t("reason2Desc")}
                   </p>
                 </div>
               </li>
@@ -122,11 +129,10 @@ export default function PaywallPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-white">
-                    Free training stays free
+                    {t("reason3Title")}
                   </p>
                   <p className="mt-0.5 text-xs leading-relaxed text-neutral-500">
-                    Your daily training, streak system, and progress tracking
-                    are always free. Paid plans add extras on top.
+                    {t("reason3Desc")}
                   </p>
                 </div>
               </li>
@@ -138,7 +144,7 @@ export default function PaywallPage() {
 
         <section className="py-10">
           <h2 className="mb-5 text-sm font-medium text-neutral-500">
-            Plans that unlock this
+            {t("plansUnlock")}
           </h2>
           <div className="flex flex-col gap-3">
             <Link
@@ -146,9 +152,9 @@ export default function PaywallPage() {
               className="flex items-center justify-between rounded-xl border border-neutral-800/60 bg-[#0c0c10] px-5 py-4 transition-colors hover:border-neutral-700/60"
             >
               <div>
-                <p className="text-sm font-semibold text-white">Starter</p>
+                <p className="text-sm font-semibold text-white">{tCommon("starter")}</p>
                 <p className="mt-0.5 text-xs text-neutral-500">
-                  Duo/Trio finder, training history, streak protection
+                  {t("starterFeatures")}
                 </p>
               </div>
               <span className="text-xs font-medium text-indigo-400">
@@ -160,9 +166,9 @@ export default function PaywallPage() {
               className="flex items-center justify-between rounded-xl border border-neutral-800/60 bg-[#0c0c10] px-5 py-4 transition-colors hover:border-neutral-700/60"
             >
               <div>
-                <p className="text-sm font-semibold text-white">Pro</p>
+                <p className="text-sm font-semibold text-white">{tCommon("pro")}</p>
                 <p className="mt-0.5 text-xs text-neutral-500">
-                  Everything in Starter, plus priority matching &amp; summaries
+                  {t("proFeatures")}
                 </p>
               </div>
               <span className="text-xs font-medium text-indigo-400">
@@ -180,13 +186,13 @@ export default function PaywallPage() {
               href="/pricing"
               className="flex h-11 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
             >
-              View Plans
+              {tCommon("viewPlans")}
             </Link>
             <Link
               href="/training"
               className="flex h-11 items-center justify-center rounded-lg border border-neutral-800/60 text-sm font-medium text-neutral-400 transition-colors hover:border-neutral-700 hover:text-neutral-300"
             >
-              Continue Free Training
+              {t("continueFree")}
             </Link>
           </div>
         </section>
@@ -198,7 +204,7 @@ export default function PaywallPage() {
             href="/"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            &larr; Back to home
+            {tCommon("backHome")}
           </Link>
         </footer>
       </div>

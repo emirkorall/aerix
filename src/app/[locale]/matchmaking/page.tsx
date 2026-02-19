@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/src/i18n/routing";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { createClient } from "@/src/lib/supabase/client";
 import { fetchUserPlan } from "@/src/lib/user-plan";
@@ -34,6 +35,9 @@ type View = "feed" | "create";
 
 export default function MatchmakingPage() {
   const router = useRouter();
+  const t = useTranslations("Matchmaking");
+  const tCommon = useTranslations("Common");
+  const tNav = useTranslations("Nav");
   const [plan, setPlan] = useState<PlanTier>("free");
   const [userId, setUserId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
@@ -49,6 +53,7 @@ export default function MatchmakingPage() {
   const [region, setRegion] = useState<Region>("NA");
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -66,17 +71,17 @@ export default function MatchmakingPage() {
       const feed = await fetchOpenPosts(blocked);
       setPosts(feed);
       setReady(true);
-    });
+    }).catch(() => setError(true));
   }, []);
 
   async function handleCreate() {
     if (!canUseMatchmaking(plan)) return;
     if (hasOpenPost) {
-      toast("You already have an open post. Close it first.");
+      toast(t("alreadyOpen"));
       return;
     }
     if (!note.trim()) {
-      toast("Add a short note about yourself.");
+      toast(t("addNote"));
       return;
     }
     setSubmitting(true);
@@ -93,9 +98,9 @@ export default function MatchmakingPage() {
       setPosts((prev) => [{ ...post, display_name: "You" }, ...prev]);
       setView("feed");
       setNote("");
-      toast("Post created!");
+      toast(t("postCreated"));
     } else {
-      toast("Failed to create post. Try again.");
+      toast(t("createFailed"));
     }
   }
 
@@ -103,7 +108,7 @@ export default function MatchmakingPage() {
     await closePost(postId);
     setPosts((prev) => prev.filter((p) => p.id !== postId));
     setHasOpenPost(false);
-    toast("Post closed.");
+    toast(t("postClosed"));
   }
 
   async function handleBlock(targetUserId: string) {
@@ -113,9 +118,9 @@ export default function MatchmakingPage() {
       next.add(targetUserId);
       setBlockedIds(next);
       setPosts((prev) => prev.filter((p) => p.user_id !== targetUserId));
-      toast("User blocked.");
+      toast(tCommon("userBlocked"));
     } else {
-      toast(result.error ?? "Failed to block.");
+      toast(result.error ?? tCommon("blockFailed"));
     }
   }
 
@@ -130,20 +135,20 @@ export default function MatchmakingPage() {
             href="/"
             className="text-sm font-semibold tracking-[0.2em] uppercase text-white"
           >
-            Aerix
+            {tCommon("aerix")}
           </Link>
           <div className="flex items-center gap-4">
             <Link
               href="/dashboard"
               className="text-sm text-neutral-400 transition-colors hover:text-white"
             >
-              Dashboard
+              {tNav("dashboard")}
             </Link>
             <Link
               href="/messages"
               className="text-sm text-neutral-400 transition-colors hover:text-white"
             >
-              Messages
+              {tNav("messages")}
             </Link>
           </div>
         </nav>
@@ -151,15 +156,15 @@ export default function MatchmakingPage() {
         {/* Header */}
         <section className="pt-20 pb-10">
           <p className="mb-3 text-xs font-medium uppercase tracking-widest text-neutral-500">
-            Matchmaking
+            {t("label")}
           </p>
-          <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Find your team.
+          <h1 className="text-4xl font-bold leading-[1.1] tracking-tight text-white sm:text-5xl">
+            {t("title")}
           </h1>
           <p className="mt-4 text-base leading-relaxed text-neutral-400">
-            Looking for a duo or trio? Post your rank and style, or browse
-            players looking to team up.
+            {t("desc")}
           </p>
+          <span className="accent-line" />
         </section>
 
         <div className="h-px w-full bg-neutral-800/60" />
@@ -169,8 +174,8 @@ export default function MatchmakingPage() {
           <div className="flex gap-1">
             {(
               [
-                ["feed", "Browse"],
-                ["create", "Create Post"],
+                ["feed", t("tabBrowse")],
+                ["create", t("tabCreate")],
               ] as [View, string][]
             ).map(([key, label]) => (
               <button
@@ -178,7 +183,7 @@ export default function MatchmakingPage() {
                 type="button"
                 onClick={() => {
                   if (key === "create" && !allowed) {
-                    toast("Upgrade to Starter+ to create posts.");
+                    toast(t("upgradeRequired"));
                     return;
                   }
                   setView(key);
@@ -198,7 +203,7 @@ export default function MatchmakingPage() {
               href="/pricing"
               className="text-[11px] text-indigo-400 hover:text-indigo-300"
             >
-              Upgrade to post
+              {t("upgradeToPost")}
             </Link>
           )}
         </div>
@@ -207,11 +212,28 @@ export default function MatchmakingPage() {
 
         {/* Feed */}
         {view === "feed" && (
-          <section className="py-8">
-            {!ready ? (
-              <p className="text-center text-sm text-neutral-600">
-                Loading...
-              </p>
+          <section className="py-10">
+            {error ? (
+              <div className="rounded-xl border border-red-500/20 bg-[#0c0c10] px-6 py-10 text-center">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10">
+                  <svg className="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                  </svg>
+                </div>
+                <p className="text-sm font-medium text-neutral-300">Something went wrong</p>
+                <p className="mt-1.5 text-xs text-neutral-600">Please try again later.</p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="cta-glow mt-5 inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
+                >
+                  Try again
+                </button>
+              </div>
+            ) : !ready ? (
+              <div className="flex flex-col items-center py-16 text-center">
+                <div className="mb-4 h-8 w-8 animate-pulse rounded-full bg-indigo-600/20" />
+                <p className="text-sm text-neutral-500">{tCommon("loading")}</p>
+              </div>
             ) : posts.length === 0 ? (
               <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] px-6 py-10 text-center">
                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-600/10">
@@ -220,18 +242,18 @@ export default function MatchmakingPage() {
                   </svg>
                 </div>
                 <p className="text-sm font-medium text-neutral-300">
-                  No one&apos;s looking for a team yet
+                  {t("emptyTitle")}
                 </p>
                 <p className="mt-1.5 text-xs text-neutral-600">
-                  Post your rank and playlist to find teammates.
+                  {t("emptySub")}
                 </p>
                 {allowed && (
                   <button
                     type="button"
                     onClick={() => setView("create")}
-                    className="mt-5 inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
+                    className="cta-glow mt-5 inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
                   >
-                    Create a post
+                    {t("createPost")}
                   </button>
                 )}
               </div>
@@ -248,7 +270,7 @@ export default function MatchmakingPage() {
                       router.push(`/matchmaking/${post.id}`)
                     }
                     onBlock={() => handleBlock(post.user_id)}
-                    onReported={() => toast("Report submitted.")}
+                    onReported={() => toast(tCommon("reportSubmitted"))}
                     onReportError={(msg) => toast(msg)}
                   />
                 ))}
@@ -259,33 +281,33 @@ export default function MatchmakingPage() {
 
         {/* Create */}
         {view === "create" && allowed && (
-          <section className="py-8">
+          <section className="py-10">
             {hasOpenPost ? (
               <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6 text-center">
                 <p className="text-sm text-neutral-500">
-                  You already have an open post. Close it to create a new one.
+                  {t("alreadyPosted")}
                 </p>
                 <button
                   type="button"
                   onClick={() => setView("feed")}
                   className="mt-4 text-xs font-medium text-indigo-400 hover:text-indigo-300"
                 >
-                  Back to feed &rarr;
+                  {t("backToFeed")}
                 </button>
               </div>
             ) : (
               <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6">
                 <h2 className="text-sm font-semibold text-white">
-                  Create a post
+                  {t("createTitle")}
                 </h2>
                 <p className="mt-1 text-xs text-neutral-500">
-                  Let others know what you&apos;re looking for.
+                  {t("createSub")}
                 </p>
 
                 {/* Looking for */}
                 <div className="mt-5">
                   <p className="mb-2 text-[11px] font-medium text-neutral-400">
-                    Looking for
+                    {t("lookingFor")}
                   </p>
                   <div className="flex gap-2">
                     {LOOKING_FOR_OPTIONS.map((opt) => (
@@ -308,7 +330,7 @@ export default function MatchmakingPage() {
                 {/* Rank */}
                 <div className="mt-5">
                   <p className="mb-2 text-[11px] font-medium text-neutral-400">
-                    Your rank
+                    {t("yourRank")}
                   </p>
                   <select
                     value={rank}
@@ -326,7 +348,7 @@ export default function MatchmakingPage() {
                 {/* Playlist */}
                 <div className="mt-5">
                   <p className="mb-2 text-[11px] font-medium text-neutral-400">
-                    Playlist
+                    {t("playlistLabel")}
                   </p>
                   <div className="flex gap-2">
                     {PLAYLISTS.map((pl) => (
@@ -349,7 +371,7 @@ export default function MatchmakingPage() {
                 {/* Region */}
                 <div className="mt-5">
                   <p className="mb-2 text-[11px] font-medium text-neutral-400">
-                    Region
+                    {t("region")}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {REGIONS.map((r) => (
@@ -372,26 +394,26 @@ export default function MatchmakingPage() {
                 {/* Note */}
                 <div className="mt-5">
                   <p className="mb-2 text-[11px] font-medium text-neutral-400">
-                    About you (required)
+                    {t("aboutYou")}
                   </p>
                   <textarea
                     value={note}
                     onChange={(e) => setNote(e.target.value.slice(0, 300))}
-                    placeholder="Play style, availability, what you're working on..."
+                    placeholder={t("notePlaceholder")}
                     rows={3}
                     className="w-full rounded-lg border border-neutral-800/60 bg-[#0c0c10] px-3 py-2 text-sm text-white placeholder:text-neutral-700 outline-none focus:border-indigo-500/40 resize-none"
                   />
                   <p className="mt-1 text-right text-[10px] text-neutral-700">
-                    {note.length}/300
+                    {t("charCount", { n: note.length })}
                   </p>
                 </div>
 
                 <button
                   onClick={handleCreate}
                   disabled={submitting || !note.trim()}
-                  className="mt-4 flex h-11 w-full items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="cta-glow mt-4 flex h-11 w-full items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {submitting ? "Posting..." : "Post"}
+                  {submitting ? t("posting") : t("post")}
                 </button>
               </div>
             )}
@@ -405,21 +427,21 @@ export default function MatchmakingPage() {
             href="/dashboard"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            Dashboard
+            {tNav("dashboard")}
           </Link>
           <span className="text-neutral-800">&middot;</span>
           <Link
             href="/messages"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            Messages
+            {tNav("messages")}
           </Link>
           <span className="text-neutral-800">&middot;</span>
           <Link
             href="/"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            Home
+            {tCommon("home")}
           </Link>
         </footer>
       </div>
@@ -449,6 +471,8 @@ function PostCard({
   onReported: () => void;
   onReportError: (msg: string) => void;
 }) {
+  const t = useTranslations("Matchmaking");
+  const tCommon = useTranslations("Common");
   const ago = timeAgo(post.created_at);
   const [showReport, setShowReport] = useState(false);
   const [reportReason, setReportReason] = useState<ReportReason>("Spam");
@@ -470,7 +494,7 @@ function PostCard({
       setReportDetails("");
       onReported();
     } else {
-      onReportError(result.error ?? "Report failed.");
+      onReportError(result.error ?? tCommon("reportFailed"));
     }
   }
 
@@ -483,7 +507,7 @@ function PostCard({
               {post.display_name ?? "Player"}
             </h3>
             <span className="rounded-full bg-indigo-600/15 px-2 py-0.5 text-[10px] font-medium text-indigo-300 capitalize">
-              LF {post.looking_for}
+              {t("lfType", { type: post.looking_for })}
             </span>
           </div>
           <p className="mt-1.5 text-xs leading-relaxed text-neutral-400">
@@ -515,7 +539,7 @@ function PostCard({
             onClick={onClose}
             className="rounded-lg border border-neutral-800/60 px-3 py-1.5 text-[11px] font-medium text-neutral-500 transition-colors hover:border-red-500/30 hover:text-red-400"
           >
-            Close Post
+            {t("closePost")}
           </button>
         ) : canContact ? (
           <button
@@ -523,7 +547,7 @@ function PostCard({
             onClick={onContact}
             className="rounded-lg border border-indigo-500/30 bg-indigo-600/15 px-3 py-1.5 text-[11px] font-medium text-indigo-300 transition-colors hover:bg-indigo-600/25"
           >
-            Contact
+            {t("contact")}
           </button>
         ) : (
           <Link
@@ -543,7 +567,7 @@ function PostCard({
                 d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"
               />
             </svg>
-            Starter+
+            {tCommon("starterPlus")}
           </Link>
         )}
 
@@ -556,7 +580,7 @@ function PostCard({
               className="rounded-lg border border-neutral-800/60 px-3 py-1.5 text-[11px] font-medium text-neutral-600 transition-colors hover:border-neutral-700 hover:text-neutral-400"
               data-testid="report-btn"
             >
-              Report
+              {tCommon("report")}
             </button>
             {!confirmBlock ? (
               <button
@@ -564,7 +588,7 @@ function PostCard({
                 onClick={() => setConfirmBlock(true)}
                 className="rounded-lg border border-neutral-800/60 px-3 py-1.5 text-[11px] font-medium text-neutral-600 transition-colors hover:border-red-500/30 hover:text-red-400"
               >
-                Block
+                {tCommon("block")}
               </button>
             ) : (
               <button
@@ -575,7 +599,7 @@ function PostCard({
                 }}
                 className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-[11px] font-medium text-red-400 transition-colors hover:bg-red-500/20"
               >
-                Confirm Block
+                {tCommon("confirmBlock")}
               </button>
             )}
           </>
@@ -586,7 +610,7 @@ function PostCard({
       {showReport && (
         <div className="mt-3 rounded-lg border border-neutral-800/60 bg-[#0a0a0e] p-3">
           <p className="mb-2 text-[11px] font-medium text-neutral-400">
-            Why are you reporting this post?
+            {tCommon("reportLabel")}
           </p>
           <select
             value={reportReason}
@@ -606,7 +630,7 @@ function PostCard({
             onChange={(e) =>
               setReportDetails(e.target.value.slice(0, 500))
             }
-            placeholder="Additional details (optional)"
+            placeholder={tCommon("reportDetails")}
             rows={2}
             className="mt-2 w-full rounded-lg border border-neutral-800/60 bg-[#0c0c10] px-2.5 py-1.5 text-xs text-white placeholder:text-neutral-700 outline-none focus:border-indigo-500/40 resize-none"
           />
@@ -616,13 +640,13 @@ function PostCard({
               disabled={reportSubmitting}
               className="rounded-lg bg-red-500/20 px-3 py-1.5 text-[11px] font-medium text-red-300 transition-colors hover:bg-red-500/30 disabled:opacity-50"
             >
-              {reportSubmitting ? "Sending..." : "Submit Report"}
+              {reportSubmitting ? tCommon("sendingReport") : tCommon("submitReport")}
             </button>
             <button
               onClick={() => setShowReport(false)}
               className="text-[11px] text-neutral-600 hover:text-neutral-400"
             >
-              Cancel
+              {tCommon("cancel")}
             </button>
           </div>
         </div>

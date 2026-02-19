@@ -47,3 +47,35 @@ body {
   border-radius: 1px;
   margin-top: 12px;
 }
+
+/* Signature motif: subtle glow behind primary CTAs */
+.cta-glow {
+  position: relative;
+}
+.cta-glow::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    rgba(99, 102, 241, 0.25) 0%,
+    transparent 70%
+  );
+  filter: blur(12px);
+  opacity: 0.35;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: -1;
+}
+.cta-glow:hover::before,
+.cta-glow:focus-visible::before {
+  opacity: 1;
+}
+
+/* Divider utility */
+.divider {
+  height: 1px;
+  width: 100%;
+  background-color: rgba(38, 38, 38, 0.6);
+}

@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/src/i18n/routing";
+import { useTranslations } from "next-intl";
 import { Suspense, useEffect, useState } from "react";
 import { createClient } from "@/src/lib/supabase/client";
 import { syncCompletions } from "@/src/lib/supabase/sync-completions";
@@ -61,8 +62,9 @@ function StatCard({
   locked?: boolean;
   lockLabel?: string;
 }) {
+  const t = useTranslations("Progress");
   return (
-    <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-4">
+    <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
       <div className="flex items-center justify-between">
         <p className="text-[11px] font-medium text-neutral-500">{label}</p>
         {locked && lockLabel && (
@@ -76,15 +78,20 @@ function StatCard({
       ) : (
         <p className="mt-2 text-2xl font-bold text-white">{value}</p>
       )}
-      <p className="mt-1 text-[11px] text-neutral-600">{locked ? `Unlock with ${lockLabel}` : sub}</p>
+      <p className="mt-1 text-[11px] text-neutral-600">{locked ? t("unlockWith", { label: lockLabel ?? "" }) : sub}</p>
     </div>
   );
 }
 
 function ProgressContent() {
+  const t = useTranslations("Progress");
+  const tc = useTranslations("Common");
+  const tn = useTranslations("Nav");
+
   const [plan, setPlan] = useState<"free" | "starter" | "pro">("free");
   const [signedIn, setSignedIn] = useState(false);
   const [ready, setReady] = useState(false);
+  const [error, setError] = useState(false);
   const [completedDates, setCompletedDates] = useState<Set<string>>(new Set());
   const [allNotes, setAllNotes] = useState<Record<string, SessionNote>>({});
   const [allTags, setAllTags] = useState<Record<string, FocusTag[]>>({});
@@ -125,7 +132,7 @@ function ProgressContent() {
         loadFromStorage();
       }
       setReady(true);
-    });
+    }).catch(() => setError(true));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -168,7 +175,7 @@ function ProgressContent() {
   const prevRank = filteredSnapshots.length > 1 ? filteredSnapshots[filteredSnapshots.length - 2] : null;
 
   let rankDeltaValue = "—";
-  let rankDeltaSub = "Add a rank check-in";
+  let rankDeltaSub = t("addRankCheckin");
   if (latestRank && prevRank) {
     const diff = getRankIndex(latestRank.rank) - getRankIndex(prevRank.rank);
     if (diff > 0) {
@@ -196,9 +203,9 @@ function ProgressContent() {
 
   const insight =
     thisWeekCount === 0
-      ? "Start with one session today — momentum beats motivation."
+      ? t("insightStart")
       : thisWeekCount >= 5
-        ? "Strong week. Protect your rhythm."
+        ? t("insightStrong")
         : delta > 0
           ? `You trained ${delta} more ${delta === 1 ? "day" : "days"} than last week.`
           : delta === 0 && thisWeekCount > 0
@@ -221,33 +228,63 @@ function ProgressContent() {
             href="/dashboard"
             className="text-sm text-neutral-400 transition-colors hover:text-white"
           >
-            Dashboard
+            {tn("dashboard")}
           </Link>
         </nav>
 
         <section className="pt-20 pb-10">
           <p className="mb-3 text-xs font-medium uppercase tracking-widest text-neutral-500">
-            Progress Insights
+            {t("label")}
           </p>
-          <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Your progress.
+          <h1 className="text-4xl font-bold leading-[1.1] tracking-tight text-white sm:text-5xl">
+            {t("title")}
           </h1>
           <p className="mt-4 text-base leading-relaxed text-neutral-400">
-            Consistency compounds. Here&apos;s proof you&apos;re showing up.
+            {t("desc")}
           </p>
+          <span className="accent-line" />
           <div className="mt-5 flex items-center gap-2">
             {signedIn && plan !== "free" && (
               <span className="rounded-full bg-indigo-600/20 px-2.5 py-0.5 text-[10px] font-medium text-indigo-400 capitalize">
-                {plan}
+                {tc(plan)}
               </span>
             )}
             {ready && !signedIn && (
               <span className="rounded-full border border-neutral-800 bg-neutral-900 px-2.5 py-0.5 text-[10px] font-medium text-neutral-500">
-                Preview · local data
+                {t("preview")}
               </span>
             )}
           </div>
         </section>
+
+        {error && (
+          <section className="py-10">
+            <div className="rounded-xl border border-red-500/20 bg-[#0c0c10] px-6 py-10 text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10">
+                <svg className="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                </svg>
+              </div>
+              <p className="text-sm font-medium text-neutral-300">Something went wrong</p>
+              <p className="mt-1.5 text-xs text-neutral-600">Please try again later.</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="cta-glow mt-5 inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
+              >
+                Try again
+              </button>
+            </div>
+          </section>
+        )}
+
+        {!ready && !error && (
+          <section className="py-10">
+            <div className="flex flex-col items-center py-16 text-center">
+              <div className="mb-4 h-8 w-8 animate-pulse rounded-full bg-indigo-600/20" />
+              <p className="text-sm text-neutral-500">{t("loadingProgress")}</p>
+            </div>
+          </section>
+        )}
 
         <div className="h-px w-full bg-neutral-800/60" />
 
@@ -261,16 +298,16 @@ function ProgressContent() {
                 </svg>
               </div>
               <p className="text-sm font-medium text-neutral-300">
-                No training sessions yet
+                {t("emptyTitle")}
               </p>
               <p className="mt-1.5 text-xs text-neutral-600">
-                Complete your first session and your progress will appear here.
+                {t("emptySub")}
               </p>
               <Link
                 href="/training"
-                className="mt-5 inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
+                className="cta-glow mt-5 inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
               >
-                Start training
+                {t("startTraining")}
               </Link>
             </div>
           </section>
@@ -279,56 +316,56 @@ function ProgressContent() {
         {/* ── Stat Cards ── */}
         <section className="py-10">
           <h2 className="mb-6 text-sm font-medium text-neutral-500">
-            Overview
+            {t("overview")}
           </h2>
           <div className="grid grid-cols-2 gap-3">
             <StatCard
-              label="Current Streak"
+              label={t("currentStreak")}
               value={`${streaks.current}`}
-              sub={streaks.current === 0 ? "Start today" : `${streaks.current === 1 ? "day" : "days"} in a row`}
+              sub={streaks.current === 0 ? t("startToday") : t("daysInRow", { n: streaks.current })}
             />
             <StatCard
-              label="Best Streak"
+              label={t("bestStreak")}
               value={`${streaks.best}`}
               sub={
                 streaks.current >= streaks.best && streaks.best > 0
-                  ? "Personal best!"
-                  : `${streaks.best === 1 ? "day" : "days"} record`
+                  ? t("personalBest")
+                  : t("daysRecord", { n: streaks.best })
               }
               locked={plan === "free"}
-              lockLabel="Starter+"
+              lockLabel={tc("starterPlus")}
             />
             <StatCard
-              label="This Week"
+              label={t("thisWeek")}
               value={`${thisWeekCount}/7`}
               sub={
                 delta > 0
-                  ? `+${delta} vs last week`
+                  ? t("vsLastWeek", { delta: `+${delta}` })
                   : delta < 0
-                    ? `${delta} vs last week`
-                    : "Same as last week"
+                    ? t("vsLastWeek", { delta: `${delta}` })
+                    : t("sameAsLast")
               }
             />
             <StatCard
-              label="Last Week"
+              label={t("lastWeek")}
               value={`${lastWeekCount}/7`}
-              sub="Days trained"
+              sub={t("daysTrained")}
             />
             <StatCard
-              label="Minutes This Week"
+              label={t("minutesWeek")}
               value={weeklyTotalMinutes > 0 ? `${weeklyTotalMinutes}` : "—"}
               sub={
                 weeklySessionsWithDuration > 0
-                  ? `${weeklySessionsWithDuration} ${weeklySessionsWithDuration === 1 ? "session" : "sessions"} logged`
-                  : "No sessions logged"
+                  ? t("sessionsLogged", { n: weeklySessionsWithDuration })
+                  : t("noSessions")
               }
             />
             <StatCard
-              label={`Rank Delta (${rankPlaylist})`}
+              label={t("rankDelta", { playlist: rankPlaylist })}
               value={rankDeltaValue}
               sub={rankDeltaSub}
               locked={plan !== "pro"}
-              lockLabel={plan === "free" ? "Starter+" : "Pro"}
+              lockLabel={plan === "free" ? tc("starterPlus") : tc("pro")}
             />
           </div>
         </section>
@@ -338,7 +375,7 @@ function ProgressContent() {
         {/* ── This Week Calendar ── */}
         <section className="py-10">
           <h2 className="mb-6 text-sm font-medium text-neutral-500">
-            This Week
+            {t("calendarTitle")}
           </h2>
           <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6">
             <div className="grid grid-cols-7 gap-1.5">
@@ -400,12 +437,12 @@ function ProgressContent() {
         {/* ── This Week Focus ── */}
         <section className="py-10">
           <h2 className="mb-6 text-sm font-medium text-neutral-500">
-            Focus Tags
+            {t("focusTagsTitle")}
           </h2>
           {weeklyTagCounts.length === 0 ? (
             <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
               <p className="text-sm text-neutral-600">
-                No focus tags yet. Tag what you practiced after each session.
+                {t("noFocusTags")}
               </p>
             </div>
           ) : (
@@ -428,7 +465,7 @@ function ProgressContent() {
         <section className="py-10">
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-sm font-medium text-neutral-500">
-              Rank Snapshot
+              {t("rankSnapshot")}
             </h2>
             <div className="flex gap-1">
               {PLAYLISTS.map((pl) => (
@@ -472,28 +509,28 @@ function ProgressContent() {
                         }`}
                       >
                         {trend === "up"
-                          ? "Trending up"
+                          ? t("trendUp")
                           : trend === "down"
-                            ? "Trending down"
-                            : "No change"}
+                            ? t("trendDown")
+                            : t("noChange")}
                       </span>
                     );
                   })()}
                 </div>
                 <p className="mt-2 text-[11px] text-neutral-600">
-                  Last updated: {formatDate(latestRank.date)}
+                  {t("lastUpdated", { date: formatDate(latestRank.date) })}
                 </p>
               </>
             ) : (
               <p className="text-sm text-neutral-600">
-                Not set yet.{" "}
+                {t("notSetYet")}{" "}
                 <Link
                   href="/rank"
                   className="text-indigo-400 hover:text-indigo-300"
                 >
-                  Add a rank check-in
+                  {t("addRankCheckin")}
                 </Link>{" "}
-                to start tracking.
+                {t("toStartTracking")}
               </p>
             )}
             <div className="mt-4 flex items-center gap-4">
@@ -502,13 +539,13 @@ function ProgressContent() {
                 onClick={() => setShowRankForm((v) => !v)}
                 className="text-xs font-medium text-indigo-400 transition-colors hover:text-indigo-300"
               >
-                {showRankForm ? "Cancel" : "Quick Update"}
+                {showRankForm ? tc("cancel") : t("quickUpdate")}
               </button>
               <Link
                 href="/rank"
                 className="text-xs text-neutral-500 transition-colors hover:text-neutral-300"
               >
-                Full check-in &rarr;
+                {t("fullCheckin")}
               </Link>
             </div>
             {showRankForm && (
@@ -518,7 +555,7 @@ function ProgressContent() {
                     htmlFor="rank-playlist"
                     className="mb-1.5 block text-[11px] font-medium text-neutral-500"
                   >
-                    Playlist
+                    {t("playlist")}
                   </label>
                   <select
                     id="rank-playlist"
@@ -540,7 +577,7 @@ function ProgressContent() {
                     htmlFor="rank-select"
                     className="mb-1.5 block text-[11px] font-medium text-neutral-500"
                   >
-                    Rank
+                    {t("rank")}
                   </label>
                   <select
                     id="rank-select"
@@ -574,7 +611,7 @@ function ProgressContent() {
                   }}
                   className="flex h-9 items-center justify-center rounded-lg bg-indigo-600 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
                 >
-                  Save Rank
+                  {t("saveRank")}
                 </button>
               </div>
             )}
@@ -586,21 +623,21 @@ function ProgressContent() {
         {/* ── Insights ── */}
         {plan === "free" ? (
           <PremiumPreview
-            title="Insights"
-            description="Starter unlocks insights that connect your focus + time + consistency."
+            title={t("insights")}
+            description={t("insightsLocked")}
             actions={
               <>
                 <Link
                   href="/upgrade?plan=starter"
                   className="flex h-8 items-center justify-center rounded-lg bg-indigo-600 px-4 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
                 >
-                  Unlock Insights
+                  {t("unlockInsights")}
                 </Link>
                 <Link
                   href="/pricing"
                   className="text-xs text-neutral-500 transition-colors hover:text-neutral-300"
                 >
-                  Compare plans
+                  {tc("comparePlans")}
                 </Link>
               </>
             }
@@ -629,9 +666,9 @@ function ProgressContent() {
         ) : (
           <section className="py-10">
             <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-sm font-medium text-neutral-500">Insights</h2>
+              <h2 className="text-sm font-medium text-neutral-500">{t("insights")}</h2>
               <span className="rounded-full bg-indigo-600/20 px-2.5 py-0.5 text-[10px] font-medium text-indigo-400">
-                {plan === "pro" ? "Pro" : "Starter"}
+                {plan === "pro" ? tc("pro") : tc("starter")}
               </span>
             </div>
             <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
@@ -640,8 +677,8 @@ function ProgressContent() {
                   <span className="mt-1 block h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500" />
                   <span className="text-sm leading-relaxed text-neutral-300">
                     {weeklyTagCounts.length > 0
-                      ? <>Top focus: <strong className="text-white">{weeklyTagCounts[0].tag}</strong> — tagged {weeklyTagCounts[0].count} {weeklyTagCounts[0].count === 1 ? "time" : "times"} this week.</>
-                      : "No focus tags this week. Tag your sessions to see patterns."}
+                      ? t("topFocus", { tag: weeklyTagCounts[0].tag, n: weeklyTagCounts[0].count })
+                      : t("noFocusWeek")}
                   </span>
                 </li>
                 <li className="flex items-start gap-2.5">
@@ -688,13 +725,12 @@ function ProgressContent() {
         {/* ── Recent Notes ── */}
         <section className="py-10">
           <h2 className="mb-6 text-sm font-medium text-neutral-500">
-            Recent Notes
+            {t("recentNotes")}
           </h2>
           {recentNotes.length === 0 ? (
             <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
               <p className="text-sm text-neutral-600">
-                No session notes yet. Complete a training session and reflect on
-                what went well.
+                {t("noNotes")}
               </p>
             </div>
           ) : (
@@ -710,14 +746,14 @@ function ProgressContent() {
                     </span>
                     {completedDates.has(date) && (
                       <span className="rounded-full bg-indigo-600/15 px-2 py-0.5 text-[10px] font-medium text-indigo-400">
-                        Trained
+                        {t("trained")}
                       </span>
                     )}
                   </div>
                   {note.better.trim() && (
                     <div className="mt-3">
                       <p className="text-[11px] font-medium text-neutral-500">
-                        What felt better
+                        {t("feltBetter")}
                       </p>
                       <p className="mt-0.5 text-sm leading-relaxed text-neutral-300">
                         {note.better}
@@ -727,7 +763,7 @@ function ProgressContent() {
                   {note.tomorrow.trim() && (
                     <div className="mt-3">
                       <p className="text-[11px] font-medium text-neutral-500">
-                        Focus for next session
+                        {t("nextFocus")}
                       </p>
                       <p className="mt-0.5 text-sm leading-relaxed text-neutral-300">
                         {note.tomorrow}
@@ -759,23 +795,23 @@ function ProgressContent() {
             {trainedToday ? (
               <Link
                 href={`/training/plan?plan=${plan}`}
-                className="flex h-11 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+                className="cta-glow flex h-11 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
               >
-                View Weekly Plan
+                {t("viewWeeklyPlan")}
               </Link>
             ) : (
               <Link
                 href={`/training?plan=${plan}`}
-                className="flex h-11 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+                className="cta-glow flex h-11 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
               >
-                Train Today
+                {t("trainToday")}
               </Link>
             )}
             <Link
               href="/dashboard"
               className="flex h-11 items-center justify-center rounded-lg border border-neutral-800/60 text-sm font-medium text-neutral-400 transition-colors hover:border-neutral-700 hover:text-neutral-300"
             >
-              Back to Dashboard
+              {tc("backDashboard")}
             </Link>
           </div>
         </section>
@@ -786,13 +822,13 @@ function ProgressContent() {
           <section className="py-10">
             <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5 text-center">
               <p className="text-sm text-neutral-400">
-                Sign in to sync your data across devices and unlock plan features.
+                {t("signInPrompt")}
               </p>
               <Link
                 href="/login?returnTo=/progress"
-                className="mt-4 inline-flex h-9 items-center justify-center rounded-lg bg-indigo-600 px-5 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
+                className="cta-glow mt-4 inline-flex h-9 items-center justify-center rounded-lg bg-indigo-600 px-5 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
               >
-                Sign in
+                {tc("signIn")}
               </Link>
             </div>
           </section>
@@ -805,14 +841,14 @@ function ProgressContent() {
             href="/dashboard"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            Dashboard
+            {tn("dashboard")}
           </Link>
           <span className="text-neutral-800">&middot;</span>
           <Link
             href="/"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            Home
+            {tn("home")}
           </Link>
         </footer>
       </div>

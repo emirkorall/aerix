@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/src/i18n/routing";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   getOnboarding,
   saveOnboarding,
@@ -34,6 +35,9 @@ const RESET_KEYS = [
 ];
 
 export default function SettingsPage() {
+  const t = useTranslations("Settings");
+  const tNav = useTranslations("Nav");
+  const tCommon = useTranslations("Common");
   const [goal, setGoal] = useState<Goal>("Rank Up");
   const [playlist, setPlaylist] = useState<Playlist>("2v2");
   const [prefsSaved, setPrefsSaved] = useState(false);
@@ -91,21 +95,21 @@ export default function SettingsPage() {
               href="/dashboard"
               className="text-sm text-neutral-400 transition-colors hover:text-white"
             >
-              Dashboard
+              {tNav("dashboard")}
             </Link>
           </nav>
           <section className="flex flex-col items-center pt-32 pb-20 text-center">
             <p className="text-sm leading-relaxed text-neutral-400">
-              Set up your preferences first to use Settings.
+              {t("setupFirst")}
             </p>
             <Link
               href="/dashboard"
               className="mt-6 flex h-10 items-center justify-center rounded-lg bg-indigo-600 px-6 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
             >
-              Set up now
+              {t("setupNow")}
             </Link>
             <p className="mt-3 text-xs text-neutral-600">
-              No account needed yet.
+              {t("noAccount")}
             </p>
           </section>
         </div>
@@ -127,16 +131,16 @@ export default function SettingsPage() {
             href="/dashboard"
             className="text-sm text-neutral-400 transition-colors hover:text-white"
           >
-            Dashboard
+            {tNav("dashboard")}
           </Link>
         </nav>
 
         <section className="pt-20 pb-10">
           <p className="mb-3 text-xs font-medium uppercase tracking-widest text-neutral-500">
-            Settings
+            {t("label")}
           </p>
           <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Your preferences.
+            {t("title")}
           </h1>
         </section>
 
@@ -145,12 +149,12 @@ export default function SettingsPage() {
         {/* ── Preferences ── */}
         <section className="py-10">
           <h2 className="mb-6 text-sm font-medium text-neutral-500">
-            Preferences
+            {t("preferences")}
           </h2>
           <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6">
             <div>
               <p className="mb-2 text-[11px] font-medium text-neutral-400">
-                Goal
+                {t("goal")}
               </p>
               <div className="flex flex-wrap gap-2">
                 {GOALS.map((g) => (
@@ -175,7 +179,7 @@ export default function SettingsPage() {
 
             <div className="mt-5">
               <p className="mb-2 text-[11px] font-medium text-neutral-400">
-                Main Playlist
+                {t("mainPlaylist")}
               </p>
               <div className="flex gap-2">
                 {PLAYLISTS.map((pl) => (
@@ -209,7 +213,7 @@ export default function SettingsPage() {
                   : "bg-indigo-600 text-white hover:bg-indigo-500"
               }`}
             >
-              {prefsSaved ? "Saved." : "Save Preferences"}
+              {prefsSaved ? tCommon("saved") : t("savePrefs")}
             </button>
           </div>
         </section>
@@ -219,15 +223,15 @@ export default function SettingsPage() {
         {/* ── Training Reminders ── */}
         <section className="py-10">
           <h2 className="mb-6 text-sm font-medium text-neutral-500">
-            Training Reminders
+            {t("reminders")}
           </h2>
           <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6">
             {/* Enable toggle */}
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-white">Enable reminders</p>
+                <p className="text-sm font-medium text-white">{t("enableReminders")}</p>
                 <p className="mt-0.5 text-xs text-neutral-600">
-                  Get a nudge on your dashboard on training days.
+                  {t("reminderSub")}
                 </p>
               </div>
               <button
@@ -253,7 +257,7 @@ export default function SettingsPage() {
                 {/* Day picker */}
                 <div className="mt-5">
                   <p className="mb-2 text-[11px] font-medium text-neutral-400">
-                    Which days?
+                    {t("whichDays")}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {ALL_DAYS.map(({ key, label }) => {
@@ -286,11 +290,11 @@ export default function SettingsPage() {
                   </div>
                   {userPlan === "free" && (
                     <p className="mt-2 text-[11px] text-neutral-600">
-                      Free plan: max 2 days.{" "}
+                      {t("freeDayLimit")}{" "}
                       <Link href="/pricing" className="text-indigo-400 hover:text-indigo-300">
-                        Starter+
+                        {tCommon("starterPlus")}
                       </Link>{" "}
-                      for unlimited.
+                      {t("forUnlimited")}
                     </p>
                   )}
                 </div>
@@ -301,7 +305,7 @@ export default function SettingsPage() {
                     htmlFor="reminder-time"
                     className="mb-1.5 block text-[11px] font-medium text-neutral-400"
                   >
-                    Preferred time
+                    {t("preferredTime")}
                   </label>
                   <input
                     id="reminder-time"
@@ -336,11 +340,11 @@ export default function SettingsPage() {
                   : "bg-indigo-600 text-white hover:bg-indigo-500"
               }`}
             >
-              {reminderSaving ? "Saving…" : reminderSaved ? "Saved." : "Save Reminders"}
+              {reminderSaving ? tCommon("saving") : reminderSaved ? tCommon("saved") : t("saveReminders")}
             </button>
 
             <p className="mt-3 text-[11px] text-neutral-600">
-              This is an in-app reminder for now. We&apos;ll add notifications later.
+              {t("reminderNote")}
             </p>
           </div>
         </section>
@@ -350,15 +354,15 @@ export default function SettingsPage() {
         {/* ── Public Profile ── */}
         <section className="py-10">
           <h2 className="mb-6 text-sm font-medium text-neutral-500">
-            Public Profile
+            {t("publicProfile")}
           </h2>
           <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6">
             {/* Enable toggle */}
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-white">Enable public profile</p>
+                <p className="text-sm font-medium text-white">{t("enableProfile")}</p>
                 <p className="mt-0.5 text-xs text-neutral-600">
-                  Share your progress page with anyone.
+                  {t("profileSub")}
                 </p>
               </div>
               <button
@@ -386,7 +390,7 @@ export default function SettingsPage() {
                   htmlFor="profile-username"
                   className="mb-1.5 block text-[11px] font-medium text-neutral-400"
                 >
-                  Username
+                  {t("username")}
                 </label>
                 <input
                   id="profile-username"
@@ -402,12 +406,11 @@ export default function SettingsPage() {
                   className="w-full rounded-lg border border-neutral-800/60 bg-[#060608] px-3 py-2.5 text-sm text-white outline-none focus:border-neutral-700"
                 />
                 <p className="mt-1.5 text-[11px] text-neutral-600">
-                  3-20 characters, lowercase letters, numbers, and underscores only.
+                  {t("usernameHint")}
                 </p>
                 {profileUsername.length >= 3 && (
                   <p className="mt-2 text-[11px] text-neutral-500">
-                    Preview:{" "}
-                    <span className="text-indigo-400">/u/{profileUsername}</span>
+                    {t("usernamePreview", { username: profileUsername })}
                   </p>
                 )}
               </div>
@@ -421,7 +424,7 @@ export default function SettingsPage() {
               disabled={profileSaving}
               onClick={async () => {
                 if (profileEnabled && !/^[a-z0-9_]{3,20}$/.test(profileUsername)) {
-                  setProfileError("Username must be 3-20 characters (letters, numbers, _).");
+                  setProfileError(t("usernameError"));
                   return;
                 }
                 setProfileSaving(true);
@@ -430,7 +433,7 @@ export default function SettingsPage() {
                 if (result.ok) {
                   setProfileSaved(true);
                 } else {
-                  setProfileError(result.error ?? "Failed to save");
+                  setProfileError(result.error ?? t("saveError"));
                 }
                 setProfileSaving(false);
               }}
@@ -440,7 +443,7 @@ export default function SettingsPage() {
                   : "bg-indigo-600 text-white hover:bg-indigo-500"
               }`}
             >
-              {profileSaving ? "Saving\u2026" : profileSaved ? "Saved." : "Save Profile"}
+              {profileSaving ? tCommon("saving") : profileSaved ? tCommon("saved") : t("saveProfile")}
             </button>
           </div>
         </section>
@@ -449,29 +452,28 @@ export default function SettingsPage() {
 
         {/* ── Data ── */}
         <section className="py-10">
-          <h2 className="mb-6 text-sm font-medium text-neutral-500">Data</h2>
+          <h2 className="mb-6 text-sm font-medium text-neutral-500">{t("dataSection")}</h2>
           <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6">
             {didReset ? (
               <div className="text-center">
                 <p className="text-sm font-medium text-indigo-300">
-                  Reset complete.
+                  {t("resetComplete")}
                 </p>
                 <Link
                   href="/dashboard"
                   className="mt-3 inline-block text-xs text-neutral-500 transition-colors hover:text-neutral-300"
                 >
-                  Back to Dashboard &rarr;
+                  {t("backDashboard")}
                 </Link>
               </div>
             ) : (
               <>
                 <p className="text-xs leading-relaxed text-neutral-500">
-                  This removes all local training data, preferences, and
-                  progress from this browser. This cannot be undone.
+                  {t("dataWarning")}
                 </p>
                 <button
                   onClick={() => {
-                    if (!confirm("Reset all local AERIX data? This cannot be undone.")) return;
+                    if (!confirm(t("confirmReset"))) return;
                     for (const key of RESET_KEYS) {
                       localStorage.removeItem(key);
                     }
@@ -479,7 +481,7 @@ export default function SettingsPage() {
                   }}
                   className="mt-4 flex h-10 w-full items-center justify-center rounded-lg border border-red-500/20 bg-red-500/[0.06] text-sm font-medium text-red-400 transition-colors hover:bg-red-500/[0.12]"
                 >
-                  Reset my local data
+                  {t("resetButton")}
                 </button>
               </>
             )}
@@ -493,7 +495,7 @@ export default function SettingsPage() {
             href="/dashboard"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            &larr; Back to Dashboard
+            {tCommon("backDashboard")}
           </Link>
         </footer>
       </div>

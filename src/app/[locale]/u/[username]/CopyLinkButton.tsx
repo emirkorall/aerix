@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 export default function CopyLinkButton({ username }: { username: string }) {
+  const t = useTranslations("PublicProfile");
   const [copied, setCopied] = useState(false);
 
   return (
@@ -20,7 +22,7 @@ export default function CopyLinkButton({ username }: { username: string }) {
           : "bg-indigo-600 text-white hover:bg-indigo-500"
       }`}
     >
-      {copied ? "Link copied!" : "Copy profile link"}
+      {copied ? t("linkCopied") : t("copyLink")}
     </button>
   );
 }

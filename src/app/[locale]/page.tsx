@@ -3,6 +3,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { createClient } from "@/src/lib/supabase/server";
 import { isSupabaseConfigured } from "@/src/lib/supabase/validate";
 import { LanguageSwitcher } from "@/src/components/LanguageSwitcher";
+import ProductPreviews from "@/src/components/ProductPreviews";
 
 export default async function Home({
   params,
@@ -90,11 +91,12 @@ export default async function Home({
           <p className="mt-6 max-w-lg text-lg leading-relaxed text-neutral-400">
             {t("heroSub")}
           </p>
+          <span className="accent-line mx-auto" />
 
           <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row">
             <Link
               href={startFreeHref}
-              className="rounded-lg bg-indigo-600 px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+              className="cta-glow rounded-lg bg-indigo-600 px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
             >
               {t("startFree")}
             </Link>
@@ -114,7 +116,7 @@ export default async function Home({
         <div className="h-px w-full bg-neutral-800/60" />
 
         {/* ───── Why AERIX ───── */}
-        <section className="py-24">
+        <section className="py-16 lg:py-20">
           <p className="mb-4 text-center text-xs font-medium uppercase tracking-widest text-neutral-500">
             {t("whyLabel")}
           </p>
@@ -124,7 +126,7 @@ export default async function Home({
 
           <div className="grid gap-5 sm:grid-cols-3">
             {/* Pillar 1 */}
-            <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-7">
+            <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6">
               <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-500/10">
                 <svg className="h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z" />
@@ -146,7 +148,7 @@ export default async function Home({
             </div>
 
             {/* Pillar 2 */}
-            <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-7">
+            <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6">
               <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-500/10">
                 <svg className="h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6.429 9.75 2.25 12l4.179 2.25m0-4.5 5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0 4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0-5.571 3-5.571-3" />
@@ -167,7 +169,7 @@ export default async function Home({
             </div>
 
             {/* Pillar 3 */}
-            <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-7">
+            <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6">
               <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-500/10">
                 <svg className="h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
@@ -191,8 +193,13 @@ export default async function Home({
 
         <div className="h-px w-full bg-neutral-800/60" />
 
+        {/* ───── See AERIX in action ───── */}
+        <ProductPreviews />
+
+        <div className="h-px w-full bg-neutral-800/60" />
+
         {/* ───── How it works ───── */}
-        <section className="py-24">
+        <section className="py-16 lg:py-20">
           <p className="mb-4 text-center text-xs font-medium uppercase tracking-widest text-neutral-500">
             {t("howLabel")}
           </p>
@@ -222,7 +229,7 @@ export default async function Home({
         <div className="h-px w-full bg-neutral-800/60" />
 
         {/* ───── Plans teaser ───── */}
-        <section className="py-24">
+        <section className="py-16 lg:py-20">
           <p className="mb-4 text-center text-xs font-medium uppercase tracking-widest text-neutral-500">{t("plansLabel")}</p>
           <h2 className="mb-14 text-center text-2xl font-bold tracking-tight text-white sm:text-3xl">{t("plansTitle")}</h2>
 
@@ -271,7 +278,7 @@ export default async function Home({
         <div className="h-px w-full bg-neutral-800/60" />
 
         {/* ───── Training Packs teaser ───── */}
-        <section className="py-24">
+        <section className="py-16 lg:py-20">
           <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:text-left sm:gap-12">
             <div className="mb-6 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-neutral-800/60 bg-[#0c0c10]">
               <svg className="h-6 w-6 text-indigo-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M6.429 9.75 2.25 12l4.179 2.25m0-4.5 5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0 4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0-5.571 3-5.571-3" /></svg>
@@ -290,7 +297,7 @@ export default async function Home({
         <div className="h-px w-full bg-neutral-800/60" />
 
         {/* ───── Season Updates teaser ───── */}
-        <section className="py-24">
+        <section className="py-16 lg:py-20">
           <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:text-left sm:gap-12">
             <div className="mb-6 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-neutral-800/60 bg-[#0c0c10]">
               <svg className="h-6 w-6 text-indigo-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 0 1-2.25 2.25M16.5 7.5V18a2.25 2.25 0 0 0 2.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 0 0 2.25 2.25h13.5" /></svg>
@@ -309,10 +316,10 @@ export default async function Home({
         <div className="h-px w-full bg-neutral-800/60" />
 
         {/* ───── Footer CTA ───── */}
-        <section className="py-24 text-center">
+        <section className="py-16 lg:py-20 text-center">
           <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">{t("footerCta")}</h2>
           <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            <Link href={startFreeHref} className="rounded-lg bg-indigo-600 px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500">{t("startFree")}</Link>
+            <Link href={startFreeHref} className="cta-glow rounded-lg bg-indigo-600 px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500">{t("startFree")}</Link>
             <Link href="/pricing" className="rounded-lg border border-neutral-700 px-7 py-3.5 text-sm font-medium text-neutral-300 transition-colors hover:border-neutral-500 hover:text-white">{t("viewPlans")}</Link>
           </div>
         </section>

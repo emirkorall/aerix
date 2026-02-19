@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/src/i18n/routing";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { fetchUserPlan } from "@/src/lib/user-plan";
 import {
   getToday,
@@ -43,6 +44,9 @@ function saveRankNote(date: string, playlist: string, note: string) {
 }
 
 export default function RankPage() {
+  const t = useTranslations("Rank");
+  const tNav = useTranslations("Nav");
+  const tCommon = useTranslations("Common");
   const [plan, setPlan] = useState<"free" | "starter" | "pro">("free");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -101,7 +105,7 @@ export default function RankPage() {
     return (
       <main className="min-h-screen bg-[#060608] text-white">
         <div className="mx-auto max-w-xl px-6 py-20">
-          <p className="text-sm text-neutral-600">Loading…</p>
+          <p className="text-sm text-neutral-600">{tCommon("loading")}</p>
         </div>
       </main>
     );
@@ -122,7 +126,7 @@ export default function RankPage() {
               href="/dashboard"
               className="text-sm text-neutral-400 transition-colors hover:text-white"
             >
-              Dashboard
+              {tNav("dashboard")}
             </Link>
           </nav>
 
@@ -143,23 +147,23 @@ export default function RankPage() {
               </svg>
             </div>
             <h1 className="text-2xl font-bold tracking-tight text-white">
-              Rank saved.
+              {t("rankSaved")}
             </h1>
             <p className="mt-3 text-sm text-neutral-400">
-              {rankStr} in {playlist} — recorded for {today}.
+              {t("rankSavedSub", { rank: rankStr, playlist, date: today })}
             </p>
             <div className="mt-8 flex w-full max-w-xs flex-col gap-3">
               <Link
                 href="/progress"
                 className="flex h-11 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
               >
-                View Progress
+                {t("viewProgress")}
               </Link>
               <Link
                 href="/dashboard"
                 className="flex h-11 items-center justify-center rounded-lg border border-neutral-800/60 text-sm font-medium text-neutral-400 transition-colors hover:border-neutral-700 hover:text-neutral-300"
               >
-                Back to Dashboard
+                {tCommon("backDashboard")}
               </Link>
             </div>
           </section>
@@ -182,28 +186,28 @@ export default function RankPage() {
             href="/dashboard"
             className="text-sm text-neutral-400 transition-colors hover:text-white"
           >
-            Dashboard
+            {tNav("dashboard")}
           </Link>
         </nav>
 
         <section className="pt-20 pb-10">
           <p className="mb-3 text-xs font-medium uppercase tracking-widest text-neutral-500">
-            Rank Check-in
+            {t("label")}
           </p>
           <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Log your rank.
+            {t("title")}
           </h1>
           <p className="mt-4 text-base leading-relaxed text-neutral-400">
-            Quick rank check-in (30 seconds). Track your climb over time.
+            {t("desc")}
           </p>
           {plan === "free" && (
             <p className="mt-3 text-xs text-neutral-600">
-              Free plan keeps your latest 3 check-ins.{" "}
+              {t("freeNote")}{" "}
               <Link
                 href="/pricing"
                 className="text-indigo-400 hover:text-indigo-300"
               >
-                Upgrade for unlimited.
+                {tCommon("upgradeMore")}
               </Link>
             </p>
           )}
@@ -216,7 +220,7 @@ export default function RankPage() {
             {/* Playlist */}
             <div>
               <p className="mb-2 text-[11px] font-medium text-neutral-500">
-                Playlist
+                {t("playlist")}
               </p>
               <div className="flex gap-2">
                 {(["1v1", "2v2", "3v3"] as Playlist[]).map((pl) => (
@@ -242,7 +246,7 @@ export default function RankPage() {
                 htmlFor="rank-tier"
                 className="mb-1.5 block text-[11px] font-medium text-neutral-500"
               >
-                Rank
+                {t("rank")}
               </label>
               <select
                 id="rank-tier"
@@ -262,7 +266,7 @@ export default function RankPage() {
             {!isSSL && (
               <div>
                 <p className="mb-2 text-[11px] font-medium text-neutral-500">
-                  Division
+                  {t("division")}
                 </p>
                 <div className="flex gap-2">
                   {DIVISIONS.map((d) => (
@@ -289,8 +293,8 @@ export default function RankPage() {
                 htmlFor="rank-note"
                 className="mb-1.5 block text-[11px] font-medium text-neutral-500"
               >
-                Note{" "}
-                <span className="text-neutral-700">(optional)</span>
+                {t("noteLabel")}{" "}
+                <span className="text-neutral-700">{t("noteOptional")}</span>
               </label>
               <input
                 id="rank-note"
@@ -298,7 +302,7 @@ export default function RankPage() {
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 maxLength={120}
-                placeholder="e.g. Felt confident in rotations today"
+                placeholder={t("notePlaceholder")}
                 className="w-full rounded-lg border border-neutral-800/60 bg-[#0c0c10] px-3 py-2.5 text-sm text-white placeholder-neutral-700 outline-none transition-colors focus:border-neutral-700"
               />
             </div>
@@ -306,7 +310,7 @@ export default function RankPage() {
             {/* Preview */}
             <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-4">
               <p className="text-[11px] font-medium text-neutral-500">
-                Saving as
+                {t("savingAs")}
               </p>
               <p className="mt-1 text-lg font-bold text-white">{rankStr}</p>
               <p className="mt-0.5 text-xs text-neutral-600">
@@ -325,7 +329,7 @@ export default function RankPage() {
                   : "bg-indigo-600 text-white hover:bg-indigo-500"
               }`}
             >
-              {saving ? "Saving\u2026" : "Save Check-in"}
+              {saving ? tCommon("saving") : t("saveCheckin")}
             </button>
           </div>
         </section>
@@ -337,14 +341,14 @@ export default function RankPage() {
             href="/progress"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            Progress
+            {t("progress")}
           </Link>
           <span className="text-neutral-800">&middot;</span>
           <Link
             href="/dashboard"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            Dashboard
+            {tNav("dashboard")}
           </Link>
         </footer>
       </div>

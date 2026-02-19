@@ -54,7 +54,7 @@ export default function Pricing() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-[#060608] text-white">
+    <main className="min-h-screen bg-[#060608] text-white aerix-grid">
       <div className="mx-auto max-w-5xl px-6">
         <nav className="flex items-center justify-between py-6">
           <Link href="/" className="text-sm font-semibold tracking-[0.2em] uppercase text-white">
@@ -68,13 +68,14 @@ export default function Pricing() {
           </Link>
         </nav>
 
-        <section className="flex flex-col items-center pt-20 pb-16 text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+        <section className="flex flex-col items-center pt-16 pb-12 lg:pt-20 lg:pb-16 text-center">
+          <h1 className="text-4xl font-bold leading-[1.1] tracking-tight text-white sm:text-5xl">
             {t("title")}
           </h1>
           <p className="mt-4 max-w-md text-base leading-relaxed text-neutral-400">
             {t("subtitle")}
           </p>
+          <span className="accent-line mx-auto mt-4" />
 
           <div className="mt-6 flex items-center gap-1 rounded-lg border border-neutral-800/60 bg-[#0c0c10] p-1">
             <button
@@ -100,7 +101,7 @@ export default function Pricing() {
           </div>
         </section>
 
-        <div className="grid gap-4 pb-20 sm:grid-cols-3">
+        <div className="grid gap-6 pb-20 sm:grid-cols-3">
           <div className="flex flex-col rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6">
             <div className="mb-6">
               <h2 className="text-base font-semibold text-white">{t("freeName")}</h2>
@@ -150,7 +151,7 @@ export default function Pricing() {
 
             <Link
               href="/upgrade?plan=starter"
-              className="mb-2 flex h-10 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+              className="cta-glow mb-2 flex h-10 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
             >
               {t("subscribe")}
             </Link>
@@ -241,7 +242,7 @@ export default function Pricing() {
 
         <div className="h-px w-full bg-neutral-800/60" />
 
-        <section className="py-16">
+        <section className="py-16 lg:py-20">
           <h3 className="mb-6 text-center text-sm font-medium text-neutral-500">
             {t("whyPay")}
           </h3>

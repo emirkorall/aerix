@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/src/i18n/routing";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense, useState } from "react";
+import { useTranslations } from "next-intl";
 
 const plans = {
   starter: {
@@ -10,28 +11,12 @@ const plans = {
     price: "5.99",
     symbol: "\u20ac",
     period: "/month",
-    description: "Train smarter, track everything",
-    features: [
-      "Daily training tracking",
-      "Full training history",
-      "6 training blocks with videos",
-      "Focus tags & session duration tracking",
-      "Personalized weekly insights",
-    ],
   },
   pro: {
     name: "Pro",
     price: "11.99",
     symbol: "\u20ac",
     period: "/month",
-    description: "For competitive grinders",
-    features: [
-      "Everything in Starter",
-      "9 advanced training blocks",
-      "Rank trend insights",
-      "Deeper weekly summaries",
-      "Duo / Trio finder (coming soon)",
-    ],
   },
 } as const;
 
@@ -51,10 +36,19 @@ export default function UpgradePage() {
 }
 
 function UpgradeContent() {
+  const t = useTranslations("Upgrade");
+  const tCommon = useTranslations("Common");
   const searchParams = useSearchParams();
   const router = useRouter();
   const planKey = parsePlan(searchParams.get("plan"));
   const plan = plans[planKey];
+
+  const desc = planKey === "starter" ? t("starterDesc") : t("proDesc");
+
+  const features =
+    planKey === "starter"
+      ? [t("starterA"), t("starterB"), t("starterC"), t("starterD"), t("starterE")]
+      : [t("proA"), t("proB"), t("proC"), t("proD"), t("proE")];
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -80,11 +74,11 @@ function UpgradeContent() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        setError(data.error || "Something went wrong.");
+        setError(data.error || t("error"));
         setLoading(false);
       }
     } catch {
-      setError("Network error. Please try again.");
+      setError(t("networkError"));
       setLoading(false);
     }
   }
@@ -103,21 +97,21 @@ function UpgradeContent() {
             href="/pricing"
             className="text-sm text-neutral-500 hover:text-neutral-300"
           >
-            &larr; Back to pricing
+            {t("backPricing")}
           </Link>
         </nav>
 
         <section className="flex flex-col items-center pt-20 pb-16 text-center">
           <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-            Upgrade to {plan.name}
+            {t("title", { plan: plan.name })}
           </h1>
-          <p className="mt-2 text-sm text-neutral-500">{plan.description}</p>
+          <p className="mt-2 text-sm text-neutral-500">{desc}</p>
         </section>
 
         <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6">
           <div className="flex items-baseline justify-between border-b border-neutral-800/60 pb-5">
             <h2 className="text-base font-semibold text-white">
-              {plan.name} Plan
+              {t("planName", { plan: plan.name })}
             </h2>
             <p>
               <span className="text-2xl font-bold text-white">
@@ -131,7 +125,7 @@ function UpgradeContent() {
           </div>
 
           <ul className="mt-5 flex flex-col gap-2.5">
-            {plan.features.map((feature) => (
+            {features.map((feature) => (
               <li
                 key={feature}
                 className="flex items-center gap-2.5 text-sm text-neutral-400"
@@ -161,7 +155,7 @@ function UpgradeContent() {
             disabled={loading}
             className="flex h-11 w-full items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:opacity-50"
           >
-            {loading ? "Redirecting..." : "Continue to Checkout"}
+            {loading ? t("redirecting") : t("checkout")}
           </button>
           {error && (
             <p className="text-center text-xs text-red-400">{error}</p>
@@ -170,7 +164,7 @@ function UpgradeContent() {
             href="/pricing"
             className="flex h-11 w-full items-center justify-center rounded-lg border border-neutral-800/60 text-sm font-medium text-neutral-400 transition-colors hover:border-neutral-700 hover:text-neutral-300"
           >
-            Compare Plans
+            {tCommon("comparePlans")}
           </Link>
         </div>
 
@@ -179,7 +173,7 @@ function UpgradeContent() {
             href="/"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            &larr; Back to home
+            {tCommon("backHome")}
           </Link>
         </footer>
       </div>

@@ -1,9 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/src/i18n/routing";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/src/lib/supabase/client";
 import { MESSAGE_COOLDOWN_SEC } from "@/src/lib/matchmaking";
 import type { MessageThread, Message, ThreadStatus } from "@/src/lib/matchmaking";
@@ -24,6 +25,9 @@ import {
 import type { ReportReason } from "@/src/lib/supabase/moderation";
 
 export default function ThreadPage() {
+  const t = useTranslations("Thread");
+  const tCommon = useTranslations("Common");
+  const tNav = useTranslations("Nav");
   const params = useParams();
   const threadId = params.threadId as string;
 
@@ -143,9 +147,9 @@ export default function ThreadPage() {
     setResponding(false);
     if (ok) {
       setThreadStatus("accepted");
-      toast("Request accepted! You can now chat.");
+      toast(t("requestAccepted"));
     } else {
-      toast("Failed to accept. Try again.");
+      toast(t("acceptFailed"));
     }
   }
 
@@ -155,9 +159,9 @@ export default function ThreadPage() {
     setResponding(false);
     if (ok) {
       setThreadStatus("declined");
-      toast("Request declined.");
+      toast(t("requestDeclined"));
     } else {
-      toast("Failed to decline. Try again.");
+      toast(t("declineFailed"));
     }
   }
 
@@ -169,7 +173,7 @@ export default function ThreadPage() {
     if (msg) {
       setMessages((prev) => [...prev, msg]);
       setBody("");
-      toast("Message sent");
+      toast(t("messageSent"));
       setCooldown(true);
       setTimeout(() => setCooldown(false), MESSAGE_COOLDOWN_SEC * 1000);
     }
@@ -182,9 +186,9 @@ export default function ThreadPage() {
     const result = await blockUser(otherId);
     if (result.ok) {
       setBlocked(true);
-      toast("User blocked.");
+      toast(tCommon("userBlocked"));
     } else {
-      toast(result.error ?? "Failed to block.");
+      toast(result.error ?? tCommon("blockFailed"));
     }
   }
 
@@ -204,9 +208,9 @@ export default function ThreadPage() {
     if (result.ok) {
       setReportingMsgId(null);
       setReportDetails("");
-      toast("Report submitted.");
+      toast(tCommon("reportSubmitted"));
     } else {
-      toast(result.error ?? "Report failed.");
+      toast(result.error ?? tCommon("reportFailed"));
     }
   }
 
@@ -228,13 +232,13 @@ export default function ThreadPage() {
               href="/messages"
               className="text-sm text-neutral-400 transition-colors hover:text-white"
             >
-              Inbox
+              {tNav("messages")}
             </Link>
             <Link
               href="/matchmaking"
               className="text-sm text-neutral-400 transition-colors hover:text-white"
             >
-              Matchmaking
+              {tNav("matchmaking")}
             </Link>
           </div>
         </nav>
@@ -246,12 +250,12 @@ export default function ThreadPage() {
               <h1 className="text-sm font-semibold text-white">{otherName}</h1>
               {threadStatus === "pending" && (
                 <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-400">
-                  Pending
+                  {t("pending")}
                 </span>
               )}
               {threadStatus === "declined" && (
                 <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-medium text-red-400">
-                  Declined
+                  {t("declined")}
                 </span>
               )}
             </div>
@@ -260,7 +264,7 @@ export default function ThreadPage() {
                 href={`/matchmaking/${thread.post_id}`}
                 className="text-[11px] text-neutral-500 transition-colors hover:text-neutral-300"
               >
-                View original post &rarr;
+                {t("viewPost")}
               </Link>
             )}
           </div>
@@ -278,7 +282,7 @@ export default function ThreadPage() {
                 }}
                 className="rounded-lg border border-neutral-800/60 px-2.5 py-1 text-[10px] font-medium text-neutral-600 transition-colors hover:border-neutral-700 hover:text-neutral-400"
               >
-                Report
+                {tCommon("report")}
               </button>
               {!blocked && (
                 <>
@@ -288,7 +292,7 @@ export default function ThreadPage() {
                       onClick={() => setConfirmBlock(true)}
                       className="rounded-lg border border-neutral-800/60 px-2.5 py-1 text-[10px] font-medium text-neutral-600 transition-colors hover:border-red-500/30 hover:text-red-400"
                     >
-                      Block
+                      {tCommon("block")}
                     </button>
                   ) : (
                     <button
@@ -299,7 +303,7 @@ export default function ThreadPage() {
                       }}
                       className="rounded-lg border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-[10px] font-medium text-red-400 transition-colors hover:bg-red-500/20"
                     >
-                      Confirm
+                      {tCommon("confirm")}
                     </button>
                   )}
                 </>
@@ -312,7 +316,7 @@ export default function ThreadPage() {
         {blocked && (
           <div className="rounded-lg border border-red-500/20 bg-red-500/[0.05] px-4 py-3 mt-4">
             <p className="text-xs text-red-300">
-              You blocked this user. Messaging is disabled.
+              {t("blockedBanner")}
             </p>
           </div>
         )}
@@ -326,10 +330,10 @@ export default function ThreadPage() {
               </svg>
             </div>
             <p className="mt-4 text-sm font-medium text-amber-300">
-              Request sent!
+              {t("requestSent")}
             </p>
             <p className="mt-1.5 text-xs text-neutral-400">
-              Waiting for {otherName} to respond. You&apos;ll be able to chat once they accept.
+              {t("waitingFor", { name: otherName })}
             </p>
           </div>
         )}
@@ -338,10 +342,10 @@ export default function ThreadPage() {
         {threadStatus === "pending" && isReceiver && !blocked && (
           <div className="mt-6 rounded-xl border border-indigo-500/20 bg-indigo-500/[0.03] p-6 text-center">
             <p className="text-sm font-medium text-white">
-              {otherName} wants to play with you!
+              {t("wantsToPlay", { name: otherName })}
             </p>
             <p className="mt-1.5 text-xs text-neutral-400">
-              Accept to start chatting, or decline if you&apos;re not interested.
+              {t("acceptOrDecline")}
             </p>
             <div className="mt-5 flex items-center justify-center gap-3">
               <button
@@ -349,14 +353,14 @@ export default function ThreadPage() {
                 disabled={responding}
                 className="flex h-10 items-center justify-center rounded-lg bg-indigo-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:opacity-50"
               >
-                {responding ? "..." : "Accept"}
+                {responding ? "..." : t("accept")}
               </button>
               <button
                 onClick={handleDecline}
                 disabled={responding}
                 className="flex h-10 items-center justify-center rounded-lg border border-neutral-800/60 px-5 text-sm font-medium text-neutral-400 transition-colors hover:border-neutral-700 hover:text-neutral-300 disabled:opacity-50"
               >
-                {responding ? "..." : "Decline"}
+                {responding ? "..." : t("decline")}
               </button>
             </div>
           </div>
@@ -367,14 +371,14 @@ export default function ThreadPage() {
           <div className="mt-6 rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6 text-center">
             <p className="text-sm text-neutral-400">
               {isReceiver
-                ? "You declined this request."
-                : "This request was declined."}
+                ? t("youDeclined")
+                : t("wasDeclined")}
             </p>
             <Link
               href="/matchmaking"
               className="mt-4 inline-block text-xs font-medium text-indigo-400 hover:text-indigo-300"
             >
-              Back to matchmaking &rarr;
+              {t("backMatchmaking")}
             </Link>
           </div>
         )}
@@ -383,10 +387,10 @@ export default function ThreadPage() {
         {threadStatus === "accepted" && (
           <div className="flex-1 overflow-y-auto py-6">
             {!ready ? (
-              <p className="text-center text-sm text-neutral-600">Loading...</p>
+              <p className="text-center text-sm text-neutral-600">{tCommon("loading")}</p>
             ) : messages.length === 0 ? (
               <p className="text-center text-sm text-neutral-600">
-                No messages yet. Say hi!
+                {t("noMessagesYet")}
               </p>
             ) : (
               <div className="flex flex-col gap-3">
@@ -407,7 +411,7 @@ export default function ThreadPage() {
                               )
                             }
                             className="mb-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                            title="Report message"
+                            title={t("reportMessage")}
                           >
                             <svg
                               className="h-3 w-3 text-neutral-700 hover:text-red-400 transition-colors"
@@ -463,7 +467,7 @@ export default function ThreadPage() {
         {reportingMsgId && (
           <div className="rounded-lg border border-neutral-800/60 bg-[#0a0a0e] p-3 mb-3">
             <p className="mb-2 text-[11px] font-medium text-neutral-400">
-              Report this {thread && userId && reportingMsgId === (thread.starter_id === userId ? thread.receiver_id : thread.starter_id) ? "user" : "message"}
+              {thread && userId && reportingMsgId === (thread.starter_id === userId ? thread.receiver_id : thread.starter_id) ? t("reportUser") : t("reportMsg")}
             </p>
             <select
               value={reportReason}
@@ -483,7 +487,7 @@ export default function ThreadPage() {
               onChange={(e) =>
                 setReportDetails(e.target.value.slice(0, 500))
               }
-              placeholder="Additional details (optional)"
+              placeholder={tCommon("reportDetails")}
               rows={2}
               className="mt-2 w-full rounded-lg border border-neutral-800/60 bg-[#0c0c10] px-2.5 py-1.5 text-xs text-white placeholder:text-neutral-700 outline-none focus:border-indigo-500/40 resize-none"
             />
@@ -493,7 +497,7 @@ export default function ThreadPage() {
                 disabled={reportSubmitting}
                 className="rounded-lg bg-red-500/20 px-3 py-1.5 text-[11px] font-medium text-red-300 transition-colors hover:bg-red-500/30 disabled:opacity-50"
               >
-                {reportSubmitting ? "Sending..." : "Submit Report"}
+                {reportSubmitting ? tCommon("sendingReport") : tCommon("submitReport")}
               </button>
               <button
                 onClick={() => {
@@ -502,7 +506,7 @@ export default function ThreadPage() {
                 }}
                 className="text-[11px] text-neutral-600 hover:text-neutral-400"
               >
-                Cancel
+                {tCommon("cancel")}
               </button>
             </div>
           </div>
@@ -512,13 +516,13 @@ export default function ThreadPage() {
         <div className="border-t border-neutral-800/60 py-4">
           {blocked ? (
             <p className="text-center text-xs text-neutral-600">
-              Messaging disabled — user is blocked.
+              {t("messagingBlocked")}
             </p>
           ) : !chatEnabled ? (
             <p className="text-center text-xs text-neutral-600">
               {threadStatus === "pending"
-                ? "Chat will be available once the request is accepted."
-                : "This conversation is closed."}
+                ? t("chatPending")
+                : t("chatClosed")}
             </p>
           ) : (
             <>
@@ -533,7 +537,7 @@ export default function ThreadPage() {
                       handleSend();
                     }
                   }}
-                  placeholder="Type a message..."
+                  placeholder={t("typePlaceholder")}
                   className="flex-1 rounded-lg border border-neutral-800/60 bg-[#0c0c10] px-3 py-2.5 text-sm text-white placeholder:text-neutral-700 outline-none focus:border-indigo-500/40"
                 />
                 <button
@@ -541,12 +545,12 @@ export default function ThreadPage() {
                   disabled={!body.trim() || sending || cooldown}
                   className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {sending ? "..." : "Send"}
+                  {sending ? "..." : tCommon("send")}
                 </button>
               </div>
               {cooldown && (
                 <p className="mt-1.5 text-[10px] text-neutral-600">
-                  Please wait a few seconds...
+                  {t("cooldown")}
                 </p>
               )}
             </>

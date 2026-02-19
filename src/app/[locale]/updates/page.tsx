@@ -1,10 +1,20 @@
-import Link from "next/link";
+import { Link } from "@/src/i18n/routing";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { fetchPatchNotes } from "@/src/lib/rlUpdates";
 import type { PatchNote } from "@/src/lib/rlUpdates";
 
 export const revalidate = 21600; // 6 hours
 
-export default async function UpdatesPage() {
+export default async function UpdatesPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations("Updates");
+  const tNav = await getTranslations("Nav");
+  const tCommon = await getTranslations("Common");
   const notes = await fetchPatchNotes();
 
   return (
@@ -23,13 +33,13 @@ export default async function UpdatesPage() {
               href="/dashboard"
               className="text-sm text-neutral-400 transition-colors hover:text-white"
             >
-              Dashboard
+              {tNav("dashboard")}
             </Link>
             <Link
               href="/training"
               className="text-sm text-neutral-400 transition-colors hover:text-white"
             >
-              Training
+              {tNav("training")}
             </Link>
           </div>
         </nav>
@@ -37,14 +47,13 @@ export default async function UpdatesPage() {
         {/* Header */}
         <section className="pt-20 pb-10">
           <p className="mb-3 text-xs font-medium uppercase tracking-widest text-neutral-500">
-            Updates
+            {t("label")}
           </p>
           <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Rocket League Patch Notes
+            {t("title")}
           </h1>
           <p className="mt-4 text-base leading-relaxed text-neutral-400">
-            Latest patches and updates straight from Rocket League — so you
-            know what changed before you queue up.
+            {t("desc")}
           </p>
         </section>
 
@@ -55,7 +64,7 @@ export default async function UpdatesPage() {
           {notes.length === 0 ? (
             <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6 text-center">
               <p className="text-sm text-neutral-400">
-                Could not load patch notes right now.
+                {t("errorLoading")}
               </p>
               <a
                 href="https://www.rocketleague.com/news/tag/patch-notes"
@@ -63,7 +72,7 @@ export default async function UpdatesPage() {
                 rel="noopener noreferrer"
                 className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-indigo-400 transition-colors hover:text-indigo-300"
               >
-                View on Rocket League
+                {t("viewOnRL")}
                 <svg
                   className="h-4 w-4"
                   fill="none"
@@ -82,7 +91,7 @@ export default async function UpdatesPage() {
           ) : (
             <div className="flex flex-col gap-4">
               {notes.map((note) => (
-                <NoteCard key={note.href} note={note} />
+                <NoteCard key={note.href} note={note} readLabel={t("readOnRL")} />
               ))}
             </div>
           )}
@@ -92,8 +101,8 @@ export default async function UpdatesPage() {
 
         {/* Disclaimer */}
         <p className="py-6 text-center text-[10px] text-neutral-700">
-          Updates are sourced from Rocket League news and link to the original
-          post.
+          {t("disclaimer")}
+          {" "}{t("sourceNote")}
         </p>
 
         <div className="h-px w-full bg-neutral-800/60" />
@@ -103,21 +112,21 @@ export default async function UpdatesPage() {
             href="/dashboard"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            Dashboard
+            {tNav("dashboard")}
           </Link>
           <span className="text-neutral-800">&middot;</span>
           <Link
             href="/training"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            Training
+            {tNav("training")}
           </Link>
           <span className="text-neutral-800">&middot;</span>
           <Link
             href="/"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            Home
+            {tCommon("home")}
           </Link>
         </footer>
       </div>
@@ -125,7 +134,7 @@ export default async function UpdatesPage() {
   );
 }
 
-function NoteCard({ note }: { note: PatchNote }) {
+function NoteCard({ note, readLabel }: { note: PatchNote; readLabel: string }) {
   return (
     <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
       <div className="flex items-center gap-2.5">
@@ -145,7 +154,7 @@ function NoteCard({ note }: { note: PatchNote }) {
         rel="noopener noreferrer"
         className="mt-3 inline-flex items-center gap-1.5 text-[11px] font-medium text-indigo-400 transition-colors hover:text-indigo-300"
       >
-        Read on Rocket League
+        {readLabel}
         <svg
           className="h-3.5 w-3.5"
           fill="none"

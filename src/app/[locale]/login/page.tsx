@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import Link from "next/link";
+import { Link } from "@/src/i18n/routing";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/src/lib/supabase/client";
 import { isSupabaseConfigured } from "@/src/lib/supabase/validate";
 import SupabaseNotConfigured from "@/src/components/SupabaseNotConfigured";
@@ -17,6 +18,7 @@ export default function LoginPage() {
 }
 
 function LoginContent() {
+  const t = useTranslations("Login");
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo");
 
@@ -74,20 +76,20 @@ function LoginContent() {
 
         <section className="pt-32 pb-10">
           <h1 className="text-2xl font-bold tracking-tight text-white">
-            Sign in
+            {t("title")}
           </h1>
           <p className="mt-2 text-sm text-neutral-400">
-            Enter your email to receive a magic link.
+            {t("subtitle")}
           </p>
         </section>
 
         {sent ? (
           <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/[0.03] p-6 text-center">
             <p className="text-sm font-medium text-indigo-300">
-              Check your email
+              {t("checkEmail")}
             </p>
             <p className="mt-2 text-xs text-neutral-500">
-              We sent a sign-in link to {email}
+              {t("sentLink", { email })}
             </p>
           </div>
         ) : (
@@ -97,7 +99,7 @@ function LoginContent() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder={t("placeholder")}
               className="w-full rounded-lg border border-neutral-800/60 bg-[#0c0c10] px-4 py-3 text-sm text-white placeholder-neutral-600 outline-none focus:border-neutral-700"
             />
             {error && <p className="text-xs text-red-400">{error}</p>}
@@ -106,7 +108,7 @@ function LoginContent() {
               disabled={loading}
               className="flex h-11 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:opacity-50"
             >
-              {loading ? "Sending..." : "Send magic link"}
+              {loading ? t("sending") : t("sendLink")}
             </button>
           </form>
         )}

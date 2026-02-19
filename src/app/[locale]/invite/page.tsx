@@ -1,12 +1,16 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/src/i18n/routing";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { createClient } from "@/src/lib/supabase/client";
 import { ensureReferralCode } from "@/src/lib/referral";
 
 export default function InvitePage() {
+  const t = useTranslations("Invite");
+  const tNav = useTranslations("Nav");
+  const tCommon = useTranslations("Common");
   const router = useRouter();
   const [code, setCode] = useState<string | null>(null);
   const [copied, setCopied] = useState<"code" | "link" | null>(null);
@@ -56,19 +60,19 @@ export default function InvitePage() {
             href="/dashboard"
             className="text-sm text-neutral-400 transition-colors hover:text-white"
           >
-            Dashboard
+            {tNav("dashboard")}
           </Link>
         </nav>
 
         <section className="pt-20 pb-10">
           <p className="mb-3 text-xs font-medium uppercase tracking-widest text-neutral-500">
-            Referrals
+            {t("label")}
           </p>
           <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Invite a teammate.
+            {t("title")}
           </h1>
           <p className="mt-4 text-base leading-relaxed text-neutral-400">
-            Share your code — both of you get +7 days Starter trial time.
+            {t("desc")}
           </p>
         </section>
 
@@ -76,7 +80,7 @@ export default function InvitePage() {
 
         <section className="py-10">
           <h2 className="mb-6 text-sm font-medium text-neutral-500">
-            Your Referral Code
+            {t("yourCode")}
           </h2>
           <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6">
             {code ? (
@@ -93,7 +97,7 @@ export default function InvitePage() {
                         : "bg-indigo-600 text-white hover:bg-indigo-500"
                     }`}
                   >
-                    {copied === "code" ? "Copied!" : "Copy Code"}
+                    {copied === "code" ? t("copied") : t("copyCode")}
                   </button>
                 </div>
 
@@ -101,7 +105,7 @@ export default function InvitePage() {
 
                 <div className="mt-5">
                   <p className="mb-2 text-[11px] font-medium text-neutral-500">
-                    Share Link
+                    {t("shareLink")}
                   </p>
                   <div className="flex items-center gap-3">
                     <p className="min-w-0 flex-1 truncate rounded-lg border border-neutral-800/60 bg-[#060608] px-3 py-2.5 text-xs text-neutral-400">
@@ -115,14 +119,14 @@ export default function InvitePage() {
                           : "bg-indigo-600 text-white hover:bg-indigo-500"
                       }`}
                     >
-                      {copied === "link" ? "Copied!" : "Copy Link"}
+                      {copied === "link" ? t("copied") : t("copyLink")}
                     </button>
                   </div>
                 </div>
               </>
             ) : (
               <p className="text-sm text-neutral-500">
-                Could not generate referral code. Try reloading.
+                {t("codeError")}
               </p>
             )}
           </div>
@@ -132,11 +136,11 @@ export default function InvitePage() {
 
         <section className="py-10">
           <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-5">
-            <h3 className="text-sm font-medium text-white">How it works</h3>
+            <h3 className="text-sm font-medium text-white">{t("howItWorks")}</h3>
             <ol className="mt-3 flex flex-col gap-2 text-xs leading-relaxed text-neutral-400">
-              <li>1. Share your code or link with a friend.</li>
-              <li>2. They sign up and enter the code during onboarding.</li>
-              <li>3. Both of you get +7 days of Starter trial time.</li>
+              <li>{t("step1")}</li>
+              <li>{t("step2")}</li>
+              <li>{t("step3")}</li>
             </ol>
           </div>
         </section>
@@ -148,7 +152,7 @@ export default function InvitePage() {
             href="/dashboard"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            &larr; Back to Dashboard
+            {tCommon("backDashboard")}
           </Link>
         </footer>
       </div>

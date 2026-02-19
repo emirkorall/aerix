@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/src/i18n/routing";
+import { useTranslations } from "next-intl";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -42,29 +43,6 @@ const PLAN_LABELS: Record<Plan, string> = {
   pro: "Pro",
 };
 
-const tasks = [
-  {
-    id: "warmup",
-    label: "Warm-up",
-    detail: "5–10 minutes of free play to loosen up.",
-  },
-  {
-    id: "focus",
-    label: "Training focus",
-    detail: "Work through today's guided blocks below.",
-  },
-  {
-    id: "freeplay",
-    label: "Free play or drills",
-    detail: "Run a training pack or just play with intention.",
-  },
-  {
-    id: "reflect",
-    label: "Review or reflection",
-    detail: "Think about what clicked and what felt off today.",
-  },
-];
-
 
 export default function Training() {
   return (
@@ -85,6 +63,11 @@ function TrainingRouter() {
 // ── Queue Session Mode ──
 
 function QueueSession() {
+  const t = useTranslations("Training");
+  const tCommon = useTranslations("Common");
+  const tNav = useTranslations("Nav");
+  const tDashboard = useTranslations("Dashboard");
+
   const [plan, setPlan] = useState<Plan>("free");
   const [signedIn, setSignedIn] = useState(false);
   const [queueIds, setQueueIds] = useState<string[]>([]);
@@ -92,6 +75,7 @@ function QueueSession() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [doneDrills, setDoneDrills] = useState<Set<string>>(new Set());
   const [sessionComplete, setSessionComplete] = useState(false);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     setQueueIds(getLocalQueue());
@@ -106,7 +90,7 @@ function QueueSession() {
         setQueueIds(getLocalQueue());
       }
       setLoading(false);
-    });
+    }).catch(() => { setError(true); setLoading(false); });
   }, []);
 
   const allDrills = queueIds
@@ -142,7 +126,7 @@ function QueueSession() {
       setLocalQueue([]);
       if (signedIn) replaceQueue([]);
       setCompletedToday(true);
-      toast("Training marked complete");
+      toast(t("trainingComplete"));
     }
   }
 
@@ -153,9 +137,46 @@ function QueueSession() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#060608] text-white">
+      <main className="min-h-screen bg-[#060608] text-white aerix-grid">
         <div className="mx-auto max-w-xl px-6 py-20">
-          <p className="text-sm text-neutral-600">Loading queue…</p>
+          <div className="flex flex-col items-center py-20 text-center">
+            <div className="mb-4 h-8 w-8 animate-pulse rounded-full bg-indigo-600/20" />
+            <p className="text-sm text-neutral-500">{t("loadingQueue")}</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="min-h-screen bg-[#060608] text-white aerix-grid">
+        <div className="mx-auto max-w-xl px-6">
+          <nav className="flex items-center justify-between py-6">
+            <Link href="/" className="text-sm font-semibold tracking-[0.2em] uppercase text-white">
+              {tCommon("aerix")}
+            </Link>
+            <Link href="/dashboard" className="text-sm text-neutral-400 transition-colors hover:text-white">
+              {tNav("dashboard")}
+            </Link>
+          </nav>
+          <section className="py-16">
+            <div className="rounded-xl border border-red-500/20 bg-[#0c0c10] px-6 py-10 text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10">
+                <svg className="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                </svg>
+              </div>
+              <p className="text-sm font-medium text-neutral-300">Something went wrong</p>
+              <p className="mt-1.5 text-xs text-neutral-600">Please try again later.</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="cta-glow mt-5 inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
+              >
+                Try again
+              </button>
+            </div>
+          </section>
         </div>
       </main>
     );
@@ -164,14 +185,14 @@ function QueueSession() {
   // Empty queue
   if (drills.length === 0) {
     return (
-      <main className="min-h-screen bg-[#060608] text-white">
+      <main className="min-h-screen bg-[#060608] text-white aerix-grid">
         <div className="mx-auto max-w-xl px-6">
           <nav className="flex items-center justify-between py-6">
             <Link href="/" className="text-sm font-semibold tracking-[0.2em] uppercase text-white">
-              Aerix
+              {tCommon("aerix")}
             </Link>
             <Link href="/dashboard" className="text-sm text-neutral-400 transition-colors hover:text-white">
-              Dashboard
+              {tNav("dashboard")}
             </Link>
           </nav>
           <section className="flex flex-col items-center py-32 text-center">
@@ -180,15 +201,15 @@ function QueueSession() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z" />
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-white">No drills queued</h2>
+            <h2 className="text-xl font-bold text-white">{t("noQueue")}</h2>
             <p className="mt-3 text-sm text-neutral-400">
-              Add drills to your queue from the library to start a session.
+              {t("noQueueDesc")}
             </p>
             <Link
               href="/library"
-              className="mt-8 flex h-11 items-center justify-center rounded-lg bg-indigo-600 px-6 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+              className="cta-glow mt-8 flex h-11 items-center justify-center rounded-lg bg-indigo-600 px-6 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
             >
-              Go to Library
+              {t("goToLibrary")}
             </Link>
           </section>
         </div>
@@ -199,14 +220,14 @@ function QueueSession() {
   // Session complete
   if (sessionComplete) {
     return (
-      <main className="min-h-screen bg-[#060608] text-white">
+      <main className="min-h-screen bg-[#060608] text-white aerix-grid">
         <div className="mx-auto max-w-xl px-6">
           <nav className="flex items-center justify-between py-6">
             <Link href="/" className="text-sm font-semibold tracking-[0.2em] uppercase text-white">
-              Aerix
+              {tCommon("aerix")}
             </Link>
             <Link href="/dashboard" className="text-sm text-neutral-400 transition-colors hover:text-white">
-              Dashboard
+              {tNav("dashboard")}
             </Link>
           </nav>
           <section className="flex flex-col items-center py-32 text-center">
@@ -216,29 +237,29 @@ function QueueSession() {
               </svg>
             </div>
             <h2 className="text-2xl font-bold tracking-tight text-white">
-              Session complete.
+              {t("sessionComplete")}
             </h2>
             <p className="mt-3 max-w-xs text-sm leading-relaxed text-neutral-400">
-              You worked through {drills.length} {drills.length === 1 ? "drill" : "drills"}. Queue cleared — add more from the library anytime.
+              {t("sessionCompleteSub", { n: drills.length })}
             </p>
             <div className="mt-8 flex w-full max-w-xs flex-col gap-3">
               <Link
                 href="/progress"
-                className="flex h-11 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+                className="cta-glow flex h-11 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
               >
-                View Progress
+                {tDashboard("viewProgress")}
               </Link>
               <Link
                 href="/dashboard"
                 className="flex h-11 items-center justify-center rounded-lg border border-neutral-800/60 text-sm font-medium text-neutral-400 transition-colors hover:border-neutral-700 hover:text-neutral-300"
               >
-                Back to Dashboard
+                {t("backDashboard")}
               </Link>
               <Link
                 href="/library"
                 className="flex h-11 items-center justify-center rounded-lg border border-neutral-800/60 text-sm font-medium text-neutral-400 transition-colors hover:border-neutral-700 hover:text-neutral-300"
               >
-                Drill Library
+                {tDashboard("drillLibrary")}
               </Link>
             </div>
           </section>
@@ -251,18 +272,18 @@ function QueueSession() {
   const isDone = currentDrill ? doneDrills.has(currentDrill.id) : false;
 
   return (
-    <main className="min-h-screen bg-[#060608] text-white">
+    <main className="min-h-screen bg-[#060608] text-white aerix-grid">
       <div className="mx-auto max-w-xl px-6">
         <nav className="flex items-center justify-between py-6">
           <Link href="/" className="text-sm font-semibold tracking-[0.2em] uppercase text-white">
-            Aerix
+            {tCommon("aerix")}
           </Link>
           <div className="flex items-center gap-4">
             <Link href="/library" className="text-sm text-neutral-400 transition-colors hover:text-white">
-              Library
+              {tCommon("library")}
             </Link>
             <Link href="/dashboard" className="text-sm text-neutral-400 transition-colors hover:text-white">
-              Dashboard
+              {tNav("dashboard")}
             </Link>
           </div>
         </nav>
@@ -270,17 +291,17 @@ function QueueSession() {
         <section className="pt-20 pb-10">
           <div className="mb-3 flex items-center gap-3">
             <p className="text-xs font-medium uppercase tracking-widest text-neutral-500">
-              Session Queue
+              {t("sessionQueue")}
             </p>
             <span className="rounded-full bg-indigo-600/20 px-2.5 py-0.5 text-[10px] font-medium text-indigo-400">
-              {doneDrills.size}/{drills.length} done
+              {t("doneOfTotal", { done: doneDrills.size, total: drills.length })}
             </span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Your queued session.
+          <h1 className="text-4xl font-bold leading-[1.1] tracking-tight text-white sm:text-5xl">
+            {t("queueTitle")}
           </h1>
           <p className="mt-4 text-base leading-relaxed text-neutral-400">
-            Work through each drill in order. Mark done when you&apos;re ready to move on.
+            {t("queueDesc")}
           </p>
         </section>
 
@@ -337,12 +358,12 @@ function QueueSession() {
           </div>
           {gated && (
             <p className="mt-3 text-xs text-neutral-600">
-              +{allDrills.length - drills.length} more queued.{" "}
+              {t("moreQueued", { n: allDrills.length - drills.length })}{" "}
               <span className="rounded-full border border-neutral-800 bg-neutral-900 px-2 py-0.5 text-[9px] font-medium text-neutral-500">
-                Starter+
+                {tCommon("starterPlus")}
               </span>{" "}
               <Link href="/pricing" className="text-indigo-400 hover:text-indigo-300">
-                queues multiple drills.
+                {tCommon("upgradeMore")}
               </Link>
             </p>
           )}
@@ -355,11 +376,11 @@ function QueueSession() {
           <section className="py-10">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-sm font-medium text-neutral-500">
-                Drill {currentIndex + 1} of {drills.length}
+                {t("drillNofTotal", { n: currentIndex + 1, total: drills.length })}
               </h2>
               {isDone && (
                 <span className="rounded-full bg-indigo-600/20 px-2.5 py-0.5 text-[10px] font-medium text-indigo-400">
-                  Completed
+                  {tCommon("completed")}
                 </span>
               )}
             </div>
@@ -374,17 +395,17 @@ function QueueSession() {
                 <button
                   type="button"
                   onClick={markDone}
-                  className="flex h-10 flex-1 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+                  className="cta-glow flex h-10 flex-1 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
                 >
-                  Mark Drill Done
+                  {t("markDrillDone")}
                 </button>
               ) : hasNext ? (
                 <button
                   type="button"
                   onClick={nextDrill}
-                  className="flex h-10 flex-1 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+                  className="cta-glow flex h-10 flex-1 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
                 >
-                  Next Drill &rarr;
+                  {t("nextDrill")}
                 </button>
               ) : (
                 <button
@@ -395,9 +416,9 @@ function QueueSession() {
                     if (signedIn) replaceQueue([]);
                     setCompletedToday(true);
                   }}
-                  className="flex h-10 flex-1 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+                  className="cta-glow flex h-10 flex-1 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
                 >
-                  Finish Session
+                  {t("finishSession")}
                 </button>
               )}
             </div>
@@ -408,15 +429,15 @@ function QueueSession() {
 
         <footer className="flex items-center justify-center gap-4 py-8">
           <Link href="/library" className="text-xs text-neutral-600 transition-colors hover:text-neutral-400">
-            Library
+            {tCommon("library")}
           </Link>
           <span className="text-neutral-800">&middot;</span>
           <Link href="/dashboard" className="text-xs text-neutral-600 transition-colors hover:text-neutral-400">
-            Dashboard
+            {tNav("dashboard")}
           </Link>
           <span className="text-neutral-800">&middot;</span>
           <Link href="/" className="text-xs text-neutral-600 transition-colors hover:text-neutral-400">
-            Home
+            {tNav("home")}
           </Link>
         </footer>
       </div>
@@ -427,6 +448,8 @@ function QueueSession() {
 // ── Normal Training Mode ──
 
 function TodaysPlan({ plan, onJumpToDrill }: { plan: PlanTier; onJumpToDrill: (slug: string) => void }) {
+  const t = useTranslations("Training");
+
   const todayIndex = getTodayIndex();
   const today = getTodayPlan(plan);
   const dayLabel = DAY_LABELS[todayIndex];
@@ -436,7 +459,7 @@ function TodaysPlan({ plan, onJumpToDrill }: { plan: PlanTier; onJumpToDrill: (s
       <section className="py-10">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-medium text-neutral-500">
-            Today&apos;s Plan
+            {t("todaysPlan")}
           </h2>
           <span className="rounded-full bg-indigo-600/20 px-2.5 py-0.5 text-[10px] font-medium text-indigo-400">
             {dayLabel}
@@ -464,13 +487,13 @@ function TodaysPlan({ plan, onJumpToDrill }: { plan: PlanTier; onJumpToDrill: (s
               onClick={() => onJumpToDrill(today.blockSlug)}
               className="text-[11px] font-medium text-indigo-400 transition-colors hover:text-indigo-300"
             >
-              Jump to today&apos;s drill &darr;
+              {t("jumpToday")}
             </a>
             <Link
               href={`/training/plan?plan=${plan}`}
               className="text-[11px] text-neutral-500 transition-colors hover:text-neutral-300"
             >
-              View full weekly plan &rarr;
+              {t("viewFullPlan")}
             </Link>
           </div>
         </div>
@@ -492,6 +515,8 @@ function VideoBlock({
   onToggle: () => void;
   highlighted: boolean;
 }) {
+  const t = useTranslations("Training");
+
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -572,14 +597,14 @@ function VideoBlock({
       </div>
       <div className="mt-2 flex items-center justify-between">
         <p className="text-[11px] text-neutral-700">
-          If the embed doesn&apos;t load, use &ldquo;Watch on YouTube&rdquo;.
+          {t("embedFallback")}
         </p>
         <div className="flex items-center gap-2.5">
           <Link
             href="/library"
             className="text-[11px] text-neutral-600 transition-colors hover:text-indigo-400"
           >
-            Save to Library
+            {t("saveToLibrary")}
           </Link>
           <span className="text-[11px] text-neutral-700">&middot;</span>
           <a
@@ -588,10 +613,10 @@ function VideoBlock({
             rel="noopener noreferrer"
             className="text-[11px] text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            YouTube &nearr;
+            {t("youtubeLink")}
           </a>
           <span className="text-[11px] text-neutral-700">&middot;</span>
-          <p className="text-[11px] text-neutral-600">By {block.creator}</p>
+          <p className="text-[11px] text-neutral-600">{t("byCreator", { creator: block.creator })}</p>
         </div>
       </div>
     </div>
@@ -599,6 +624,9 @@ function VideoBlock({
 }
 
 function LockedTierPreview({ tier }: { tier: "starter" | "pro" }) {
+  const t = useTranslations("Training");
+  const tCommon = useTranslations("Common");
+
   const program = TRAINING_PROGRAMS[tier];
   const sections = getBlocksBySection(tier);
   const sampleBlock = sections[0]?.blocks[0];
@@ -606,39 +634,39 @@ function LockedTierPreview({ tier }: { tier: "starter" | "pro" }) {
 
   return (
     <PremiumPreview
-      title={`${program.label} Program`}
+      title={t("lockedProgram", { label: program.label })}
       badge={
         <span className="rounded-full border border-neutral-800 bg-neutral-900 px-2 py-0.5 text-[10px] font-medium text-neutral-500">
-          {program.blocks.length} blocks
+          {t("nBlocks", { n: program.blocks.length })}
         </span>
       }
-      description={`Full program is part of ${program.label} so we can keep quality high and keep building new drills.`}
+      description={t("lockedDesc", { label: program.label })}
       actions={
         <div className="flex w-full flex-col items-center gap-3">
           <Link
             href={`/upgrade?plan=${tier}`}
             className="flex h-9 w-full items-center justify-center rounded-lg bg-indigo-600 text-xs font-semibold text-white transition-colors hover:bg-indigo-500"
           >
-            Unlock {program.label}
+            {t("unlockPlan", { label: program.label })}
           </Link>
           <div className="flex items-center gap-4">
             <Link
               href="/pricing"
               className="text-xs text-neutral-500 transition-colors hover:text-neutral-300"
             >
-              Compare plans
+              {tCommon("comparePlans")}
             </Link>
             <span className="text-neutral-800">&middot;</span>
             <Link
               href={`/plans/${tier}`}
               className="text-xs text-neutral-500 transition-colors hover:text-neutral-300"
             >
-              See what&apos;s included
+              {t("seeIncluded")}
             </Link>
           </div>
           {remainingCount > 0 && (
             <p className="text-[11px] text-neutral-700">
-              +{remainingCount} more {remainingCount === 1 ? "block" : "blocks"}
+              {t("moreBlocks", { n: remainingCount })}
             </p>
           )}
         </div>
@@ -658,7 +686,7 @@ function LockedTierPreview({ tier }: { tier: "starter" | "pro" }) {
           )}
           <div className="mt-3 flex h-10 items-center justify-center rounded-lg bg-neutral-800/40">
             <span className="text-[11px] text-neutral-600">
-              Video available with {program.label}
+              {t("videoLocked", { label: program.label })}
             </span>
           </div>
         </>
@@ -691,6 +719,10 @@ const GOAL_SECTION_MAP: Record<string, string> = {
 };
 
 function TrainingContent() {
+  const t = useTranslations("Training");
+  const tCommon = useTranslations("Common");
+  const tNav = useTranslations("Nav");
+
   const [plan, setPlan] = useState<Plan>("free");
   const [focusGoal, setFocusGoal] = useState<string | null>(null);
 
@@ -783,28 +815,51 @@ function TrainingContent() {
   const checkedCount = Object.values(checked).filter(Boolean).length;
   const blocksDoneCount = Object.values(blocksDone).filter(Boolean).length;
 
+  const tasks = [
+    {
+      id: "warmup",
+      label: t("warmup"),
+      detail: t("warmupDesc"),
+    },
+    {
+      id: "focus",
+      label: t("trainingFocus"),
+      detail: t("trainingFocusDesc"),
+    },
+    {
+      id: "freeplay",
+      label: t("freePlayDrills"),
+      detail: t("freePlayDesc"),
+    },
+    {
+      id: "reflect",
+      label: t("reviewReflection"),
+      detail: t("reviewDesc"),
+    },
+  ];
+
   return (
-    <main className="min-h-screen bg-[#060608] text-white">
+    <main className="min-h-screen bg-[#060608] text-white aerix-grid">
       <div className="mx-auto max-w-xl px-6">
         <nav className="flex items-center justify-between py-6">
           <Link
             href="/"
             className="text-sm font-semibold tracking-[0.2em] uppercase text-white"
           >
-            Aerix
+            {tCommon("aerix")}
           </Link>
           <div className="flex items-center gap-4">
             <Link
               href="/library"
               className="text-sm text-neutral-400 transition-colors hover:text-white"
             >
-              Library
+              {tCommon("library")}
             </Link>
             <Link
               href="/pricing"
               className="text-sm text-neutral-400 transition-colors hover:text-white"
             >
-              Plans
+              {tCommon("plans")}
             </Link>
           </div>
         </nav>
@@ -812,14 +867,14 @@ function TrainingContent() {
         <section className="pt-20 pb-10">
           <div className="mb-3 flex items-center gap-3">
             <p className="text-xs font-medium uppercase tracking-widest text-neutral-500">
-              Daily Training
+              {t("label")}
             </p>
             <span className="rounded-full border border-neutral-800 bg-neutral-900 px-2.5 py-0.5 text-[10px] font-medium text-neutral-400">
-              Plan: {PLAN_LABELS[plan]}
+              {t("planLabel", { label: PLAN_LABELS[plan] })}
             </span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Today&apos;s Training
+          <h1 className="text-4xl font-bold leading-[1.1] tracking-tight text-white sm:text-5xl">
+            {t("todaysTraining")}
           </h1>
           <p className="mt-4 max-w-md text-base leading-relaxed text-neutral-400">
             {program.tagline}
@@ -829,19 +884,19 @@ function TrainingContent() {
               href={`/training/plan?plan=${plan}`}
               className="text-xs text-neutral-500 hover:text-neutral-300"
             >
-              View Weekly Plan &rarr;
+              {t("viewWeekly")}
             </Link>
             <Link
               href="/library"
               className="text-xs text-neutral-500 hover:text-neutral-300"
             >
-              Library &rarr;
+              {t("libraryLink")}
             </Link>
             <Link
               href="/packs"
               className="text-xs text-neutral-500 hover:text-neutral-300"
             >
-              Training Packs &rarr;
+              {t("packsLink")}
             </Link>
           </div>
         </section>
@@ -854,12 +909,12 @@ function TrainingContent() {
           <div className="pb-6">
             <p className="text-xs leading-relaxed text-neutral-500">
               {onboarding.goal === "Rank Up"
-                ? "Small sessions daily beat big sessions sometimes."
+                ? t("motivationRank")
                 : onboarding.goal === "Build Consistency"
-                  ? "Just show up \u2014 the streak does the heavy lifting."
+                  ? t("motivationConsistency")
                   : onboarding.goal === "Mechanics"
-                    ? "Focus on clean reps, not flashy clips."
-                    : "Play slower in your head, faster in your decisions."}
+                    ? t("motivationMechanics")
+                    : t("motivationGameSense")}
             </p>
           </div>
         )}
@@ -868,7 +923,7 @@ function TrainingContent() {
           <>
             <section className="py-10">
               <h2 className="mb-6 text-sm font-medium text-neutral-500">
-                Checklist
+                {t("checklist")}
               </h2>
               <ul className="flex flex-col gap-3">
                 {tasks.map((task) => (
@@ -928,15 +983,14 @@ function TrainingContent() {
               <div className="mb-6">
                 <div className="flex items-center justify-between">
                   <h2 className="text-sm font-medium text-neutral-500">
-                    Training Program
+                    {t("trainingProgram")}
                   </h2>
                   <span className="text-xs text-neutral-600">
-                    {program.blocks.length} blocks
+                    {t("nBlocks", { n: program.blocks.length })}
                   </span>
                 </div>
                 <p className="mt-2 text-xs leading-relaxed text-neutral-600">
-                  Watch, practice, and check off each block when you&apos;re
-                  done. No rush — even one block is progress.
+                  {t("programDesc")}
                 </p>
               </div>
 
@@ -963,7 +1017,7 @@ function TrainingContent() {
                         </span>
                         {isRecommended && (
                           <span className="rounded-full bg-indigo-600/20 px-2 py-0.5 text-[10px] font-medium text-indigo-400">
-                            Recommended for your focus
+                            {t("recommendedFocus")}
                           </span>
                         )}
                       </div>
@@ -998,10 +1052,10 @@ function TrainingContent() {
               </div>
 
               <p className="mt-4 text-center text-xs text-neutral-600">
-                {blocksDoneCount} of {program.blocks.length} blocks completed
+                {t("blocksCompleted", { done: blocksDoneCount, total: program.blocks.length })}
               </p>
               <p className="mt-2 text-center text-[11px] text-neutral-700">
-                Videos are embedded from YouTube and belong to their respective creators.
+                {tCommon("videoDisclosure")}
               </p>
             </section>
 
@@ -1012,19 +1066,19 @@ function TrainingContent() {
                 onClick={() => {
                   setCompleted(true);
                   setCompletedToday(true);
-                  toast("Training marked complete");
+                  toast(t("trainingComplete"));
                 }}
                 disabled={checkedCount === 0}
-                className={`flex h-11 w-full items-center justify-center rounded-lg text-sm font-semibold transition-colors ${
+                className={`cta-glow flex h-11 w-full items-center justify-center rounded-lg text-sm font-semibold transition-colors ${
                   checkedCount > 0
                     ? "bg-indigo-600 text-white hover:bg-indigo-500"
                     : "cursor-not-allowed bg-neutral-800/60 text-neutral-600"
                 }`}
               >
-                Mark today as complete
+                {t("markComplete")}
               </button>
               <p className="mt-3 text-center text-xs text-neutral-600">
-                {checkedCount} of {tasks.length} checked — do what you can.
+                {t("nOfTotalChecked", { n: checkedCount, total: tasks.length })}
               </p>
             </section>
           </>
@@ -1047,11 +1101,10 @@ function TrainingContent() {
                 </svg>
               </div>
               <h2 className="text-2xl font-bold tracking-tight text-white">
-                You showed up today.
+                {t("showedUp")}
               </h2>
               <p className="mt-3 max-w-xs text-sm leading-relaxed text-neutral-400">
-                That&apos;s progress. It doesn&apos;t matter if the session was
-                short or messy — you did the work. Come back tomorrow.
+                {t("showedUpDesc")}
               </p>
               <button
                 onClick={() => {
@@ -1062,7 +1115,7 @@ function TrainingContent() {
                 }}
                 className="mt-8 text-xs text-neutral-600 transition-colors hover:text-neutral-400"
               >
-                Reset checklist
+                {t("resetChecklist")}
               </button>
             </section>
 
@@ -1070,10 +1123,10 @@ function TrainingContent() {
 
             <section className="py-10">
               <h2 className="mb-2 text-sm font-medium text-neutral-500">
-                Session Notes
+                {t("sessionNotes")}
               </h2>
               <p className="mb-6 text-xs text-neutral-600">
-                Quick reflection — no pressure, just a few words.
+                {t("sessionNotesSub")}
               </p>
               <div className="flex flex-col gap-4">
                 <div>
@@ -1081,7 +1134,7 @@ function TrainingContent() {
                     htmlFor="note-better"
                     className="mb-1.5 block text-xs font-medium text-neutral-400"
                   >
-                    What felt better today?
+                    {t("feltBetter")}
                   </label>
                   <textarea
                     id="note-better"
@@ -1091,7 +1144,7 @@ function TrainingContent() {
                       setNotes((prev) => ({ ...prev, better: e.target.value }));
                       setNotesSaved(false);
                     }}
-                    placeholder="e.g. Aerials felt more controlled"
+                    placeholder={t("feltPlaceholder")}
                     className="w-full resize-none rounded-lg border border-neutral-800/60 bg-[#0c0c10] px-3.5 py-2.5 text-sm text-white placeholder-neutral-700 outline-none transition-colors focus:border-neutral-700"
                   />
                 </div>
@@ -1100,7 +1153,7 @@ function TrainingContent() {
                     htmlFor="note-tomorrow"
                     className="mb-1.5 block text-xs font-medium text-neutral-400"
                   >
-                    What will you focus on tomorrow?
+                    {t("focusNext")}
                   </label>
                   <textarea
                     id="note-tomorrow"
@@ -1113,7 +1166,7 @@ function TrainingContent() {
                       }));
                       setNotesSaved(false);
                     }}
-                    placeholder="e.g. Work on backboard reads"
+                    placeholder={t("focusPlaceholder")}
                     className="w-full resize-none rounded-lg border border-neutral-800/60 bg-[#0c0c10] px-3.5 py-2.5 text-sm text-white placeholder-neutral-700 outline-none transition-colors focus:border-neutral-700"
                   />
                 </div>
@@ -1133,7 +1186,7 @@ function TrainingContent() {
                       : "cursor-not-allowed bg-neutral-800/60 text-neutral-600"
                   }`}
                 >
-                  {notesSaved ? "Notes saved" : "Save notes"}
+                  {notesSaved ? t("notesSaved") : t("saveNotes")}
                 </button>
               </div>
             </section>
@@ -1142,10 +1195,10 @@ function TrainingContent() {
 
             <section className="py-10">
               <h2 className="mb-2 text-sm font-medium text-neutral-500">
-                Focus Tags
+                {t("focusTags")}
               </h2>
               <p className="mb-6 text-xs text-neutral-600">
-                What did you work on today? Pick up to 2.
+                {t("focusTagsSub")}
               </p>
               <div className="flex flex-wrap gap-2">
                 {FOCUS_TAGS.map((tag) => {
@@ -1176,7 +1229,7 @@ function TrainingContent() {
               </div>
               {selectedTags.length === 2 && (
                 <p className="mt-3 text-[11px] text-neutral-600">
-                  Max 2 tags selected.
+                  {t("maxTags")}
                 </p>
               )}
             </section>
@@ -1185,10 +1238,10 @@ function TrainingContent() {
 
             <section className="py-10">
               <h2 className="mb-2 text-sm font-medium text-neutral-500">
-                Session Duration
+                {t("sessionDuration")}
               </h2>
               <p className="mb-6 text-xs text-neutral-600">
-                Roughly how long did you train?
+                {t("durationSub")}
               </p>
               <div className="flex gap-2">
                 {DURATION_OPTIONS.map((mins) => {
@@ -1223,13 +1276,13 @@ function TrainingContent() {
                   href="/dashboard"
                   className="flex h-11 items-center justify-center rounded-lg bg-indigo-600 text-sm font-semibold text-white hover:bg-indigo-500"
                 >
-                  Back to Dashboard
+                  {t("backDashboard")}
                 </Link>
                 <Link
                   href={`/training/plan?plan=${plan}`}
                   className="flex h-11 items-center justify-center rounded-lg border border-neutral-800/60 text-sm font-medium text-neutral-400 hover:border-neutral-700 hover:text-neutral-300"
                 >
-                  View Weekly Plan
+                  {t("viewWeeklyPlan")}
                 </Link>
               </div>
             </section>
@@ -1242,7 +1295,7 @@ function TrainingContent() {
 
             <div className="pt-10 pb-2">
               <p className="text-center text-xs text-neutral-600">
-                See what&apos;s included in other plans
+                {t("seeIncluded")}
               </p>
             </div>
 
@@ -1257,7 +1310,7 @@ function TrainingContent() {
                 href="/pricing"
                 className="text-xs text-neutral-500 transition-colors hover:text-neutral-300"
               >
-                Compare all plans &rarr;
+                {t("compareAll")}
               </Link>
             </div>
           </>
@@ -1269,7 +1322,7 @@ function TrainingContent() {
 
             <div className="pt-10 pb-2">
               <p className="text-center text-xs text-neutral-600">
-                See what&apos;s included in Pro
+                {t("seeIncludedPro")}
               </p>
             </div>
 
@@ -1280,7 +1333,7 @@ function TrainingContent() {
                 href="/pricing"
                 className="text-xs text-neutral-500 transition-colors hover:text-neutral-300"
               >
-                Compare all plans &rarr;
+                {t("compareAll")}
               </Link>
             </div>
           </>
@@ -1290,7 +1343,7 @@ function TrainingContent() {
 
         <section className="py-10">
           <h2 className="mb-6 text-sm font-medium text-neutral-500">
-            Recent Training
+            {t("recentTraining")}
           </h2>
           <div className="flex flex-col gap-2">
             {last7Days.map((day) => {
@@ -1311,7 +1364,7 @@ function TrainingContent() {
                         day.isToday ? "text-white" : "text-neutral-500"
                       }`}
                     >
-                      {day.isToday ? "Today" : day.label}
+                      {day.isToday ? tCommon("today") : day.label}
                     </span>
                     <span className="text-[11px] text-neutral-600">
                       {day.dateLabel}
@@ -1322,7 +1375,7 @@ function TrainingContent() {
                       (allNotes[day.dateStr].better.trim() ||
                         allNotes[day.dateStr].tomorrow.trim()) && (
                         <span className="text-[11px] text-neutral-500">
-                          Note
+                          {t("note")}
                         </span>
                       )}
                     {done ? (
@@ -1340,11 +1393,11 @@ function TrainingContent() {
                             d="m4.5 12.75 6 6 9-13.5"
                           />
                         </svg>
-                        <span className="text-xs text-indigo-400">Completed</span>
+                        <span className="text-xs text-indigo-400">{tCommon("completed")}</span>
                       </div>
                     ) : (
                       <span className="text-xs text-neutral-600">
-                        Not completed
+                        {tCommon("notCompleted")}
                       </span>
                     )}
                   </div>
@@ -1361,14 +1414,14 @@ function TrainingContent() {
             href="/dashboard"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            Dashboard
+            {tNav("dashboard")}
           </Link>
           <span className="text-neutral-800">&middot;</span>
           <Link
             href="/"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            Home
+            {tNav("home")}
           </Link>
         </footer>
       </div>

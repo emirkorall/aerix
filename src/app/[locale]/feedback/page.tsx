@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/src/i18n/routing";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 const DRAFT_KEY = "aerix.feedbackDraft";
 const TYPES = ["Bug", "Feature", "Other"] as const;
@@ -28,6 +29,9 @@ function formatMessage(type: FeedbackType, message: string): string {
 }
 
 export default function FeedbackPage() {
+  const t = useTranslations("Feedback");
+  const tNav = useTranslations("Nav");
+  const tCommon = useTranslations("Common");
   const [type, setType] = useState<FeedbackType>("Bug");
   const [message, setMessage] = useState("");
   const [copied, setCopied] = useState(false);
@@ -41,6 +45,12 @@ export default function FeedbackPage() {
   useEffect(() => {
     localStorage.setItem(DRAFT_KEY, JSON.stringify({ type, message }));
   }, [type, message]);
+
+  const typeLabels: Record<FeedbackType, string> = {
+    Bug: t("bug"),
+    Feature: t("feature"),
+    Other: t("other"),
+  };
 
   const formatted = formatMessage(type, message);
   const mailtoHref = `mailto:feedback@aerix.gg?subject=AERIX Feedback — ${type}&body=${encodeURIComponent(message.trim())}`;
@@ -59,19 +69,19 @@ export default function FeedbackPage() {
             href="/dashboard"
             className="text-sm text-neutral-400 transition-colors hover:text-white"
           >
-            Dashboard
+            {tNav("dashboard")}
           </Link>
         </nav>
 
         <section className="pt-20 pb-10">
           <p className="mb-3 text-xs font-medium uppercase tracking-widest text-neutral-500">
-            Feedback
+            {t("label")}
           </p>
           <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
-            Help us improve.
+            {t("title")}
           </h1>
           <p className="mt-4 text-base leading-relaxed text-neutral-400">
-            Spotted something off or have an idea? Tell us.
+            {t("desc")}
           </p>
         </section>
 
@@ -81,24 +91,24 @@ export default function FeedbackPage() {
           <div className="rounded-xl border border-neutral-800/60 bg-[#0c0c10] p-6">
             <div>
               <p className="mb-2 text-[11px] font-medium text-neutral-400">
-                Type
+                {t("type")}
               </p>
               <div className="flex gap-2">
-                {TYPES.map((t) => (
+                {TYPES.map((tp) => (
                   <button
-                    key={t}
+                    key={tp}
                     type="button"
                     onClick={() => {
-                      setType(t);
+                      setType(tp);
                       setCopied(false);
                     }}
                     className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors ${
-                      type === t
+                      type === tp
                         ? "border-indigo-500/40 bg-indigo-600/20 text-indigo-300"
                         : "border-neutral-800/60 bg-transparent text-neutral-500 hover:border-neutral-700 hover:text-neutral-400"
                     }`}
                   >
-                    {t}
+                    {typeLabels[tp]}
                   </button>
                 ))}
               </div>
@@ -109,7 +119,7 @@ export default function FeedbackPage() {
                 htmlFor="feedback-message"
                 className="mb-1.5 block text-[11px] font-medium text-neutral-400"
               >
-                Message
+                {t("message")}
               </label>
               <textarea
                 id="feedback-message"
@@ -119,7 +129,7 @@ export default function FeedbackPage() {
                   setMessage(e.target.value);
                   setCopied(false);
                 }}
-                placeholder="What happened? What would you change?"
+                placeholder={t("placeholder")}
                 className="w-full resize-none rounded-lg border border-neutral-800/60 bg-[#060608] px-3.5 py-2.5 text-sm text-white placeholder-neutral-700 outline-none transition-colors focus:border-neutral-700"
               />
             </div>
@@ -140,7 +150,7 @@ export default function FeedbackPage() {
                       : "bg-indigo-600 text-white hover:bg-indigo-500"
                 }`}
               >
-                {copied ? "Copied!" : "Copy Message"}
+                {copied ? "Copied!" : t("copyMessage")}
               </button>
               <a
                 href={message.trim() ? mailtoHref : undefined}
@@ -150,7 +160,7 @@ export default function FeedbackPage() {
                     : "border-neutral-800/60 text-neutral-400 hover:border-neutral-700 hover:text-neutral-300"
                 }`}
               >
-                Email us
+                {t("emailUs")}
               </a>
             </div>
           </div>
@@ -163,7 +173,7 @@ export default function FeedbackPage() {
             href="/dashboard"
             className="text-xs text-neutral-600 transition-colors hover:text-neutral-400"
           >
-            &larr; Back to Dashboard
+            {tCommon("backDashboard")}
           </Link>
         </footer>
       </div>
