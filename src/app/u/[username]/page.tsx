@@ -1,5 +1,5 @@
 import { Link } from "@/src/i18n/routing";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { isSupabaseConfigured } from "@/src/lib/supabase/validate";
 import CopyLinkButton from "./CopyLinkButton";
 
@@ -19,10 +19,10 @@ interface PublicProfile {
 export default async function PublicProfilePage({
   params,
 }: {
-  params: Promise<{ username: string; locale: string }>;
+  params: Promise<{ username: string }>;
 }) {
-  const { username, locale } = await params;
-  setRequestLocale(locale);
+  const { username } = await params;
+  const locale = await getLocale();
   const t = await getTranslations("PublicProfile");
 
   let profile: PublicProfile | null = null;

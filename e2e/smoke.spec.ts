@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Dashboard auth guard", () => {
   test("redirects unauthenticated users to /login", async ({ page }) => {
-    const response = await page.goto("/en/dashboard");
+    const response = await page.goto("/dashboard");
     // Middleware redirects to /login with returnTo param
     expect(page.url()).toContain("/login");
     expect(page.url()).toContain("returnTo");
@@ -12,8 +12,8 @@ test.describe("Dashboard auth guard", () => {
 
 test.describe("Pricing page", () => {
   test("renders plan cards with CTAs", async ({ page }) => {
-    await page.goto("/en/pricing");
-    await expect(page.locator("h1")).toContainText("Simple pricing");
+    await page.goto("/pricing");
+    await expect(page.locator("h1")).toContainText("Start free");
 
     // Three plan headings
     await expect(page.getByText("Free", { exact: true }).first()).toBeVisible();
@@ -21,16 +21,16 @@ test.describe("Pricing page", () => {
     await expect(page.getByText("Pro", { exact: true }).first()).toBeVisible();
 
     // CTA buttons
-    await expect(page.getByRole("link", { name: "Get Started" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Start Free" })).toBeVisible();
     await expect(
-      page.getByRole("link", { name: "Subscribe" }).first()
+      page.getByRole("link", { name: "Upgrade to Pro" })
     ).toBeVisible();
   });
 });
 
 test.describe("Training page", () => {
   test("redirects unauthenticated users to /login", async ({ page }) => {
-    const response = await page.goto("/en/training");
+    const response = await page.goto("/training");
     expect(page.url()).toContain("/login");
     expect(page.url()).toContain("returnTo");
     expect(response?.status()).toBeLessThan(400);
@@ -39,7 +39,7 @@ test.describe("Training page", () => {
 
 test.describe("Library page", () => {
   test("loads and shows Training Library heading", async ({ page }) => {
-    await page.goto("/en/library");
+    await page.goto("/library");
     await expect(
       page.getByRole("heading", { name: /Your drills/i })
     ).toBeVisible();
@@ -52,7 +52,7 @@ test.describe("Library page", () => {
 
 test.describe("Training queue mode", () => {
   test("redirects unauthenticated /training?mode=queue to /login", async ({ page }) => {
-    const response = await page.goto("/en/training?mode=queue");
+    const response = await page.goto("/training?mode=queue");
     expect(page.url()).toContain("/login");
     expect(page.url()).toContain("returnTo");
     expect(response?.status()).toBeLessThan(400);
@@ -61,14 +61,14 @@ test.describe("Training queue mode", () => {
 
 test.describe("Matchmaking page", () => {
   test("redirects unauthenticated users to /login", async ({ page }) => {
-    const response = await page.goto("/en/matchmaking");
+    const response = await page.goto("/matchmaking");
     expect(page.url()).toContain("/login");
     expect(page.url()).toContain("returnTo");
     expect(response?.status()).toBeLessThan(400);
   });
 
   test("post cards have Report button when posts exist", async ({ page }) => {
-    await page.goto("/en/matchmaking");
+    await page.goto("/matchmaking");
     // If redirected (unauthenticated) or no posts, skip gracefully
     if (page.url().includes("/login")) {
       // Cannot check post cards without auth — pass gracefully
@@ -87,14 +87,14 @@ test.describe("Matchmaking page", () => {
 
 test.describe("Messages page", () => {
   test("redirects unauthenticated users to /login", async ({ page }) => {
-    const response = await page.goto("/en/messages");
+    const response = await page.goto("/messages");
     expect(page.url()).toContain("/login");
     expect(page.url()).toContain("returnTo");
     expect(response?.status()).toBeLessThan(400);
   });
 
   test("inbox renders thread list or empty state", async ({ page }) => {
-    await page.goto("/en/messages");
+    await page.goto("/messages");
     // If redirected (unauthenticated), pass gracefully
     if (page.url().includes("/login")) {
       expect(true).toBe(true);
@@ -108,7 +108,7 @@ test.describe("Messages page", () => {
 
 test.describe("Onboarding page", () => {
   test("redirects unauthenticated users to /login", async ({ page }) => {
-    const response = await page.goto("/en/onboarding");
+    const response = await page.goto("/onboarding");
     expect(page.url()).toContain("/login");
     expect(page.url()).toContain("returnTo");
     expect(response?.status()).toBeLessThan(400);
@@ -117,7 +117,7 @@ test.describe("Onboarding page", () => {
 
 test.describe("Season Updates page", () => {
   test("loads and shows Season Updates heading", async ({ page }) => {
-    await page.goto("/en/updates");
+    await page.goto("/updates");
     await expect(
       page.getByRole("heading", { name: /Patch Notes/i })
     ).toBeVisible();
@@ -127,7 +127,7 @@ test.describe("Season Updates page", () => {
 
 test.describe("Training Packs page", () => {
   test("loads and shows Training Packs heading", async ({ page }) => {
-    await page.goto("/en/packs");
+    await page.goto("/packs");
     await expect(
       page.getByRole("heading", { name: /Training Packs/i })
     ).toBeVisible();
@@ -137,7 +137,7 @@ test.describe("Training Packs page", () => {
 
 test.describe("Invite page", () => {
   test("redirects unauthenticated users to /login", async ({ page }) => {
-    const response = await page.goto("/en/invite");
+    const response = await page.goto("/invite");
     expect(page.url()).toContain("/login");
     expect(page.url()).toContain("returnTo");
     expect(response?.status()).toBeLessThan(400);
@@ -146,7 +146,7 @@ test.describe("Invite page", () => {
 
 test.describe("Public Profile", () => {
   test("shows not-found state for non-existent username", async ({ page }) => {
-    await page.goto("/en/u/thisuserdoesnotexist999");
+    await page.goto("/u/thisuserdoesnotexist999");
     await expect(
       page.getByRole("heading", { name: /Profile not found/i })
     ).toBeVisible();
@@ -156,29 +156,10 @@ test.describe("Public Profile", () => {
 
 test.describe("Homepage", () => {
   test("shows Sign in link for unauthenticated users", async ({ page }) => {
-    await page.goto("/en");
+    await page.goto("/");
     await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
     await expect(
       page.getByRole("heading", { name: /rank-up starts/i })
     ).toBeVisible();
-  });
-});
-
-test.describe("Locale switching", () => {
-  test("switching to Spanish renders Spanish content", async ({ page }) => {
-    await page.goto("/en/pricing");
-    await expect(page.locator("h1")).toContainText("Simple pricing");
-
-    // Navigate to Spanish version
-    await page.goto("/es/pricing");
-    // h1 should now be in Spanish
-    await expect(page.locator("h1")).not.toContainText("Simple pricing");
-    expect(page.url()).toContain("/es/pricing");
-  });
-
-  test("bare path redirects to locale-prefixed path", async ({ page }) => {
-    await page.goto("/pricing");
-    // Middleware should redirect to /en/pricing (default locale)
-    expect(page.url()).toContain("/en/pricing");
   });
 });

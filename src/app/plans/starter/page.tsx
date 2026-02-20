@@ -1,5 +1,5 @@
 import { Link } from "@/src/i18n/routing";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 
 const check = (
   <svg className="h-4 w-4 shrink-0 text-neutral-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -13,14 +13,8 @@ const checkAccent = (
   </svg>
 );
 
-export default async function ProPlan({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
-  const { locale } = await params;
-  setRequestLocale(locale);
-  const t = await getTranslations("PlanPro");
+export default async function StarterPlan() {
+  const t = await getTranslations("PlanStarter");
   const tCommon = await getTranslations("Common");
 
   return (
@@ -39,13 +33,16 @@ export default async function ProPlan({
         </nav>
 
         <section className="pt-20 pb-10">
+          <div className="mb-4 inline-flex items-center rounded-full bg-indigo-500/10 px-3 py-1 text-[11px] font-semibold text-indigo-400">
+            {t("popular")}
+          </div>
           <p className="mb-3 text-xs font-medium uppercase tracking-widest text-neutral-500">
             {t("label")}
           </p>
-          <h1 className="text-4xl font-bold tracking-tight text-white">
+          <h1 className="text-3xl font-bold tracking-tight text-white">
             {t("title")}
           </h1>
-          <p className="mt-4 text-lg leading-relaxed text-neutral-400">
+          <p className="mt-4 text-base leading-relaxed text-neutral-400">
             {t("desc")}
           </p>
         </section>
@@ -78,13 +75,6 @@ export default async function ProPlan({
                 <p className="mt-0.5 text-neutral-500">{t("feat3Desc")}</p>
               </div>
             </li>
-            <li className="flex items-start gap-2.5">
-              <span className="mt-0.5">{check}</span>
-              <div>
-                <p className="font-medium text-white">{t("feat4Title")}</p>
-                <p className="mt-0.5 text-neutral-500">{t("feat4Desc")}</p>
-              </div>
-            </li>
           </ul>
         </section>
 
@@ -103,36 +93,28 @@ export default async function ProPlan({
 
         <section className="py-10">
           <div className="flex items-baseline gap-2">
-            <p className="text-3xl font-bold text-white">{t("price")}</p>
+            <p className="text-2xl font-bold text-white">{t("price")}</p>
             <span className="text-sm text-neutral-500">{tCommon("month")}</span>
           </div>
           <p className="mt-1 text-xs text-neutral-600">
             {t("priceNote")}
           </p>
-          <div className="mt-6 flex items-center gap-4">
-            <Link
-              href="/upgrade?plan=pro"
-              className="inline-flex h-11 items-center justify-center rounded-lg bg-indigo-600 px-6 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
-            >
-              {t("goPro")}
-            </Link>
-            <Link
-              href="/pricing"
-              className="text-sm text-neutral-500 transition-colors hover:text-neutral-300"
-            >
-              {tCommon("comparePlans")}
-            </Link>
-          </div>
+          <Link
+            href="/upgrade?plan=starter"
+            className="mt-6 inline-flex h-11 items-center justify-center rounded-lg bg-indigo-600 px-6 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+          >
+            {t("chooseStarter")}
+          </Link>
         </section>
 
         <div className="h-px w-full bg-neutral-800/60" />
 
         <footer className="flex items-center justify-between py-8">
-          <Link href="/plans/starter" className="text-xs text-neutral-600 transition-colors hover:text-neutral-400">
-            &larr; {tCommon("starter")}
+          <Link href="/plans/free" className="text-xs text-neutral-600 transition-colors hover:text-neutral-400">
+            {t("freePlan")}
           </Link>
-          <Link href="/pricing" className="text-xs text-neutral-600 transition-colors hover:text-neutral-400">
-            {tCommon("comparePlans")} &rarr;
+          <Link href="/plans/pro" className="text-xs text-neutral-600 transition-colors hover:text-neutral-400">
+            {t("proPlan")}
           </Link>
         </footer>
       </div>

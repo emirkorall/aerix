@@ -1,17 +1,11 @@
 import { Link } from "@/src/i18n/routing";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { fetchPatchNotes } from "@/src/lib/rlUpdates";
 import type { PatchNote } from "@/src/lib/rlUpdates";
 
 export const revalidate = 21600; // 6 hours
 
-export default async function UpdatesPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
-  const { locale } = await params;
-  setRequestLocale(locale);
+export default async function UpdatesPage() {
   const t = await getTranslations("Updates");
   const tNav = await getTranslations("Nav");
   const tCommon = await getTranslations("Common");

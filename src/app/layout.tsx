@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getMessages } from "next-intl/server";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -19,17 +21,21 @@ export const metadata: Metadata = {
     "Train smarter, track progress, and find reliable teammates. Built for the Rocket League community.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const messages = await getMessages();
+
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <NextIntlClientProvider locale="en" messages={messages}>
+          {children}
+        </NextIntlClientProvider>
         <Toaster
           theme="dark"
           position="bottom-center"

@@ -1,5 +1,5 @@
 import { Link } from "@/src/i18n/routing";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 
 const check = (
   <svg className="h-4 w-4 shrink-0 text-neutral-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -7,20 +7,14 @@ const check = (
   </svg>
 );
 
-const dash = (
-  <svg className="h-4 w-4 shrink-0 text-neutral-700" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
+const checkAccent = (
+  <svg className="h-4 w-4 shrink-0 text-indigo-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
   </svg>
 );
 
-export default async function FreePlan({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
-  const { locale } = await params;
-  setRequestLocale(locale);
-  const t = await getTranslations("PlanFree");
+export default async function ProPlan() {
+  const t = await getTranslations("PlanPro");
   const tCommon = await getTranslations("Common");
 
   return (
@@ -42,10 +36,10 @@ export default async function FreePlan({
           <p className="mb-3 text-xs font-medium uppercase tracking-widest text-neutral-500">
             {t("label")}
           </p>
-          <h1 className="text-3xl font-bold tracking-tight text-white">
+          <h1 className="text-4xl font-bold tracking-tight text-white">
             {t("title")}
           </h1>
-          <p className="mt-4 text-base leading-relaxed text-neutral-400">
+          <p className="mt-4 text-lg leading-relaxed text-neutral-400">
             {t("desc")}
           </p>
         </section>
@@ -54,13 +48,13 @@ export default async function FreePlan({
 
         <section className="py-10">
           <h2 className="mb-6 text-sm font-medium text-neutral-500">
-            {t("whatYouGet")}
+            {t("includesPlus")}
           </h2>
           <ul className="flex flex-col gap-4 text-sm text-neutral-300">
             <li className="flex items-start gap-2.5">
-              <span className="mt-0.5">{check}</span>
+              <span className="mt-0.5">{checkAccent}</span>
               <div>
-                <p className="font-medium text-white">{t("feat1Title")}</p>
+                <p className="font-medium text-indigo-300">{t("feat1Title")}</p>
                 <p className="mt-0.5 text-neutral-500">{t("feat1Desc")}</p>
               </div>
             </li>
@@ -78,58 +72,49 @@ export default async function FreePlan({
                 <p className="mt-0.5 text-neutral-500">{t("feat3Desc")}</p>
               </div>
             </li>
+            <li className="flex items-start gap-2.5">
+              <span className="mt-0.5">{check}</span>
+              <div>
+                <p className="font-medium text-white">{t("feat4Title")}</p>
+                <p className="mt-0.5 text-neutral-500">{t("feat4Desc")}</p>
+              </div>
+            </li>
           </ul>
         </section>
 
         <div className="h-px w-full bg-neutral-800/60" />
 
         <section className="py-10">
-          <h2 className="mb-6 text-sm font-medium text-neutral-500">
-            {t("notIncluded")}
+          <h2 className="mb-4 text-sm font-medium text-neutral-500">
+            {t("whoFor")}
           </h2>
-          <ul className="flex flex-col gap-3 text-sm text-neutral-600">
-            <li className="flex items-center gap-2.5">
-              <span>{dash}</span>
-              {t("notA")}
-            </li>
-            <li className="flex items-center gap-2.5">
-              <span>{dash}</span>
-              {t("notB")}
-            </li>
-            <li className="flex items-center gap-2.5">
-              <span>{dash}</span>
-              {t("notC")}
-            </li>
-          </ul>
-          <p className="mt-4 text-xs leading-relaxed text-neutral-600">
-            {t("notIncNote")}
+          <p className="text-sm leading-relaxed text-neutral-400">
+            {t("whoDesc")}
           </p>
         </section>
 
         <div className="h-px w-full bg-neutral-800/60" />
 
-        <section className="flex flex-col items-start gap-4 py-10">
-          <Link
-            href="/dashboard"
-            className="flex h-11 items-center justify-center rounded-lg bg-indigo-600 px-6 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
-          >
-            {t("getStarted")}
-          </Link>
-          <p className="text-xs text-neutral-600">
-            {t("getStartedNote")}
+        <section className="py-10">
+          <div className="flex items-baseline gap-2">
+            <p className="text-3xl font-bold text-white">{t("price")}</p>
+            <span className="text-sm text-neutral-500">{tCommon("month")}</span>
+          </div>
+          <p className="mt-1 text-xs text-neutral-600">
+            {t("priceNote")}
           </p>
-          <div className="mt-2 flex items-center gap-4">
-            <Link
-              href="/upgrade?plan=starter"
-              className="text-xs text-neutral-500 transition-colors hover:text-indigo-400"
-            >
-              {t("upgradeStarter")}
-            </Link>
+          <div className="mt-6 flex items-center gap-4">
             <Link
               href="/upgrade?plan=pro"
-              className="text-xs text-neutral-500 transition-colors hover:text-indigo-400"
+              className="inline-flex h-11 items-center justify-center rounded-lg bg-indigo-600 px-6 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
             >
-              {t("upgradePro")}
+              {t("goPro")}
+            </Link>
+            <Link
+              href="/pricing"
+              className="text-sm text-neutral-500 transition-colors hover:text-neutral-300"
+            >
+              {tCommon("comparePlans")}
             </Link>
           </div>
         </section>
@@ -137,11 +122,11 @@ export default async function FreePlan({
         <div className="h-px w-full bg-neutral-800/60" />
 
         <footer className="flex items-center justify-between py-8">
-          <Link href="/pricing" className="text-xs text-neutral-600 transition-colors hover:text-neutral-400">
-            {t("compareAll")}
-          </Link>
           <Link href="/plans/starter" className="text-xs text-neutral-600 transition-colors hover:text-neutral-400">
-            {t("starterLink")}
+            &larr; {tCommon("starter")}
+          </Link>
+          <Link href="/pricing" className="text-xs text-neutral-600 transition-colors hover:text-neutral-400">
+            {tCommon("comparePlans")} &rarr;
           </Link>
         </footer>
       </div>

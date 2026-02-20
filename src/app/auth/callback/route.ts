@@ -1,8 +1,22 @@
 import { createClient } from "@/src/lib/supabase/server";
 import { NextResponse } from "next/server";
 
+function getOrigin(request: Request): string {
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const forwardedProto = request.headers.get("x-forwarded-proto") ?? "https";
+  if (forwardedHost) {
+    return `${forwardedProto}://${forwardedHost}`;
+  }
+  const host = request.headers.get("host");
+  if (host) {
+    const proto = host.includes("localhost") ? "http" : "https";
+    return `${proto}://${host}`;
+  }
+  return new URL(request.url).origin;
+}
+
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
   const returnTo = searchParams.get("returnTo");
 
@@ -24,5 +38,6 @@ export async function GET(request: Request) {
   const destination =
     returnTo && returnTo.startsWith("/") ? returnTo : "/dashboard";
 
+  const origin = getOrigin(request);
   return NextResponse.redirect(`${origin}${destination}`);
 }

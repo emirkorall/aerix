@@ -1,12 +1,7 @@
-import { defineRouting } from "next-intl/routing";
-import { createNavigation } from "next-intl/navigation";
-
-export const routing = defineRouting({
-  locales: ["en", "es", "pt-BR", "fr", "de"],
-  defaultLocale: "en",
-});
-
-export type Locale = (typeof routing.locales)[number];
-
-export const { Link, redirect, usePathname, useRouter } =
-  createNavigation(routing);
+/**
+ * Re-export standard Next.js navigation as named exports.
+ * This keeps existing `import { Link } from "@/src/i18n/routing"` working
+ * after removing locale-based routing.
+ */
+export { default as Link } from "next/link";
+export { redirect, usePathname, useRouter } from "next/navigation";

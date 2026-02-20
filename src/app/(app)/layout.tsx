@@ -1,9 +1,9 @@
 "use client";
 
-import { Link, usePathname } from "@/src/i18n/routing";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
-import { LanguageSwitcher } from "@/src/components/LanguageSwitcher";
 
 const navKeys = [
   { href: "/dashboard", key: "dashboard" },
@@ -57,7 +57,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             >
               {t("upgrade")}
             </Link>
-            <LanguageSwitcher />
           </nav>
         </div>
       </header>

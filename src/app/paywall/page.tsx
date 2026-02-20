@@ -1,13 +1,7 @@
 import { Link } from "@/src/i18n/routing";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 
-export default async function PaywallPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
-  const { locale } = await params;
-  setRequestLocale(locale);
+export default async function PaywallPage() {
   const t = await getTranslations("Paywall");
   const tCommon = await getTranslations("Common");
 

@@ -1,18 +1,10 @@
 import { Link } from "@/src/i18n/routing";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { createClient } from "@/src/lib/supabase/server";
 import { isSupabaseConfigured } from "@/src/lib/supabase/validate";
-import { LanguageSwitcher } from "@/src/components/LanguageSwitcher";
 import ProductPreviews from "@/src/components/ProductPreviews";
 
-export default async function Home({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
-  const { locale } = await params;
-  setRequestLocale(locale);
-
+export default async function Home() {
   const t = await getTranslations("Home");
   const nav = await getTranslations("Nav");
 
@@ -48,7 +40,6 @@ export default async function Home({
             Aerix
           </span>
           <div className="flex items-center gap-4">
-            <LanguageSwitcher />
             <Link
               href="/pricing"
               className="text-sm text-neutral-400 transition-colors hover:text-white"
